@@ -1,0 +1,2961 @@
+# Larkon Dashboard — Visual System & Functional Implementation Contract
+
+Reference: https://techzaa.in/larkon/admin/index.html  
+Audited: 22 October 2026, Asia/Dhaka  
+Audience: an AI coding agent working inside an existing dashboard repository.  
+Goal: reproduce Larkon's visual system and applicable UI interactions throughout the target dashboard, using the target application's real modules, data and backend.
+
+## 0. Read this first — execution instruction
+
+Read the whole specification, then inspect the existing repository and implement it. This is an instruction to perform a dashboard theme migration, not merely write a plan. Preserve the target framework, routes, SSR, authentication, permissions, APIs, data models and business workflows. Replace conflicting old presentation styles throughout the dashboard, including shared navigation, cards, tables, forms, buttons, badges, menus, dialogs, charts and states. Reuse shared components rather than separately styling every page.
+
+Use the target application's own name, logo, modules, users, permissions, language, currency and content. **Do not create Inventory, Products, Orders or other modules solely because they appear in Larkon's demo.** Map the visual patterns to modules already present. A missing target business function is not permission to invent a backend. Preserve all working actions and connect styled controls to existing handlers.
+
+Reproduce the reference's orange/light/dark design exactly by default; do not silently substitute a previously used blue/purple theme, square cards, alternate fonts or a generic admin layout. Dashboard content and logo remain the target's. The previous storefront specification is not this dashboard's design authority.
+
+Footer project requirement: **Developed by TaiefLab** linked to **https://taieflab.com**, consistently across dashboard pages. This replaces the demo footer's vendor credit in the target implementation and is an explicit project adaptation. Preserve any required third-party license notices in source distribution independently.
+
+Do not run migrations, weaken auth, restart production, change production ports or deploy as part of a visual theme migration without separately granted authorization. Work on reversible code changes and produce a reviewable implementation with validation.
+
+## 1. Evidence, scope and parity limits
+
+### What was collected
+
+- Source HTML for **118 unique linked Larkon demo pages**, all with a Larkon title, including business-page templates, Base UI, Advanced UI, forms, tables, charts, icons, maps, applications and authentication layouts.
+- The shared `app.min.css`, `vendor.min.css`, `icons.min.css`, theme configuration, application JS, dashboard chart definitions, page/component initializers and same-directory dependencies declared by those pages. 189 unique resource references were processed; third-party references and the out-of-directory form-wizard path were skipped by the source collector, not represented as successfully downloaded.
+- Exact CSS variables and computed desktop values. Desktop viewport was 1363 × 936 CSS pixels; document content width excluding scrollbar was 1348px.
+- Browser inspection of the dashboard, product list, product create, button showcase, modal showcase, Grid.js tables and basic forms.
+- Directly exercised: sidebar submenu expansion, light → dark → light switch, settings offcanvas, condensed sidebar, modal opening and Grid.js keyword filtering. Grid.js pagination/sorting controls and source definitions were inspected; immediate text capture after some clicks did not independently prove the completed result, so full pagination/sort behavior remains a target QA gate.
+
+### What is not claimed
+
+This is not a claim that every control on all 118 pages was clicked. Mobile layouts were examined through CSS and JavaScript breakpoints, not a rendered mobile viewport. CRUD persistence, payments, login, file uploads, email sending, role enforcement and all target APIs were not tested on the vendor demo. The public template has many placeholder links (`#!`, `#`, `javascript:void(0)`), static records and client-only interactions. Demo availability does not prove production functionality.
+
+Some icons, charts and the map were missing/incomplete in the inspected browser state. Reproduce the **source-defined intended components**, not blank icon slots, blank charts, transient placeholders or the demo's technical-difficulty alert. Verify assets in the target and provide proper loading/error states. Do not claim pixel-identical completion until the target passes the final visual comparison matrix.
+
+### Evidence precedence
+
+1. Final computed style in a stable state at a stated viewport.
+2. Shared CSS with media/theme/state selectors and final cascade order.
+3. Page markup and source configuration.
+4. Deliberate target integration choices, explicitly labeled.
+
+The source appendix is a lookup aid, not a stylesheet to paste globally. Some rules are state-specific and earlier declarations are later overridden. Read selector context and resolve variables before applying.
+
+## 2. Reference architecture and dependency strategy
+
+The source embeds **Bootstrap 5.3.3** styling, with custom Larkon CSS, **Play** body typography, **Hanken Grotesk** headings, **Solar** icons through `iconify-icon`, and **Boxicons** glyphs. Feature-specific integrations include Bootstrap components, SimpleBar, Choices, Inputmask, Flatpickr, Quill, Dropzone, Grid.js, ApexCharts, jsVectorMap, FullCalendar, Swiper, SweetAlert, Toastify, ClipboardJS, Prism/Gumshoe and Dragula where referenced.
+
+This is a description of reference dependencies, not a requirement to install every package. In React/Next.js, use controlled components or appropriate React adapters; in Django/templates, reuse existing progressive enhancement. Avoid running Bootstrap JS and another dialog/menu library on the same element. Do not load an entire vendor bundle merely to obtain one input or icon. Pin compatible versions using the target lockfile and verify current package documentation when implementing; retain licenses. Fetching a public preview is not proof of ownership of all commercial distribution assets.
+
+Do not use direct DOM mutation (`innerHTML`, global event scans, class removal on route transitions) as the application architecture in a reactive framework. Reproduce user-visible behavior through scoped state and lifecycle cleanup. Lazy-load heavy charts/editors/calendar modules where used, without losing server-rendered labels, tables or authorization checks.
+
+## 3. Exact color tokens
+
+### Light scheme
+
+| Token/role | Value |
+| --- | --- |
+| Primary / orange | `#FF6C2F` |
+| Secondary/body | `#5D7186` |
+| Success | `#22C55E` |
+| Warning | `#F9B931` |
+| Info/cyan | `#4ECAC2` |
+| Danger | `#EF5F5F` |
+| Purple | `#7F56DA` |
+| Pink | `#FF86C8` |
+| Blue | `#1C84EE` |
+| Indigo | `#53389F` |
+| Body canvas | `#F9F7F7` |
+| Card/input surface | `#FFFFFF` |
+| Tertiary surface | `#F8F9FA` |
+| Light utility surface | `#EEF2F7` |
+| Dark utility color | `#323A46` |
+| Heading | `#313B5E` |
+| Body text | `#5D7186` |
+| Muted/link/footer tone | `#8486A7` |
+| Gray300/input border | `#D8DFE7` |
+| Gray400/input focus border | `#B0B0BB` |
+| Border | `#EAEDF1` |
+| Link hover | `#D95C28` |
+| Dark sidebar | `#262D34` |
+| Sidebar separator token | `#2F3944` |
+| Sidebar inactive label | `#9097A7` |
+| Dark sidebar active/hover label | `#FFFFFF` |
+| Topbar light | `#F9F7F7` |
+| Topbar item | `#707793` |
+| Topbar search | `#EAE8E8` |
+
+### Subtle status palette
+
+| Status | Soft background | Subtle border | Emphasis text |
+| --- | --- | --- | --- |
+| Primary | `#FFE2D5` | `#FFC4AC` | `#662B13` |
+| Secondary | `#DFE3E7` | `#BEC6CF` | `#252D36` |
+| Success | `#D3F3DF` | `#A7E8BF` | `#0E4F26` |
+| Warning | `#FEF1D6` | `#FDE3AD` | `#644A14` |
+| Info | `#DCF4F3` | `#B8EAE7` | `#1F514E` |
+| Danger | `#FCDFDF` | `#F9BFBF` | `#602626` |
+
+Soft **buttons** use the semantic color at10% opacity, not necessarily the above solid subtle fill. Keep semantic roles distinct: red for destructive/error, green for completed/success, amber for pending/warning, gray for neutral. Labels must accompany colors.
+
+### Dark scheme — directly checked
+
+| Role | Dark value |
+| --- | --- |
+| Body | `#22282E` |
+| Secondary/card surface | `#282F36` |
+| Body/heading | `#AAB8C5` |
+| Border | `#2F3944` |
+| Input border | `#3A4551` |
+| Input focus border | `#4A5663` |
+| Light utility surface | `#2F3943` |
+| Dark utility color | `#F1F1F1` |
+| Topbar dark | `#22282E` |
+| Topbar dark items | `#DEE2E6` |
+| Topbar dark search | `#2C3238` |
+
+Primary/status brand colors remain semantic. A light-menu option uses `#F8F5F1`, label`#797B97`, orange hover and border`#EAEDF1`; global dark scheme overrides that option back to dark sidebar. Global dark scheme similarly overrides light topbar to its dark values. Persist settings without flashing the wrong scheme on initial render.
+
+## 4. Typography, radii, shadows and spacing
+
+Reference root rem conversion: **1rem = 16px**, unlike the previous storefront's 10px root. Scope the theme to the dashboard; do not change the application's root font-size unexpectedly.
+
+| Role | Family / size / weight / line-height |
+| --- | --- |
+| Body, buttons, tables, sidebar | Play /14px /400 /21px |
+| Heading family | Hanken Grotesk /600 /1.1 |
+| h1 at≥1200 |36px |
+| h2 at≥1200 |30px |
+| h3/KPI at≥1200 |24px |
+| h4 base |18px |
+| h5 base |15px |
+| h6 base |12px |
+| Card title override |16px /600 /17.6px; margin0 |
+| Sidebar link |15px /400; active500; line-height1 |
+| Sidebar group |11px /600; uppercase;0.05em tracking;opacity0.6 |
+| Form label |14px /500;bottom margin6.4px |
+| Table header |14px /600 |
+| Small button |12.6px /400 /18.9px |
+| Notification counter |10px /600 |
+
+h1–h3 are fluid below 1200px (`calc(1.35rem + 1.2vw)`, `calc(1.3125rem + .75vw)`, `calc(1.275rem + .3vw)` respectively). Headings have margin-bottom 10px unless a component overrides it. Keep one family per role; don't substitute body fonts from another project. Load Play 400/700 and Hanken Grotesk's supported weights. Browser synthetic 500/600 behavior may occur on Play; compare metrics before changing weight files. For Bengali, add the target's approved Bengali fallback as an explicit adaptation and test wrap/height.
+
+| Geometry | Reference |
+| --- | --- |
+| Standard radius/card/button |12px |
+| Small radius/input/small button/dropdown |8px |
+| Large radius/modal/large button |16px |
+| XL |20px |
+| XXL |32px |
+| Pill |50rem (effectively fully rounded) |
+| Card shadow |`0px 3px 4px 0px rgba(0,0,0,.03)` |
+| Larger popup shadow token |`0 5px 10px rgba(30,32,37,.12)` |
+| Normal border |1px |
+| Row horizontal gutter |24px |
+| Main card body padding |24px |
+| Card header |18px24px |
+| Card vertical separation |24px |
+
+Reference spacing utilities are customized: e.g. measured `.gap-2`=12px and `.py-2`=12px vertically on the KPI footer, so **do not assume stock Bootstrap/Tailwind spacing numbers are equivalent**. Copy resolved measurements or generate local semantic spacing tokens. Container max-width95%, centered,12px horizontal inner padding. At desktop1348px and expanded sidebar280px: content1068px,container1014.59px, card content starts aroundx318.70px. This is fluid arithmetic, not a hardcoded position.
+
+## 5. Shell: sidebar, topbar and content
+
+### Expanded shell
+
+- Sidebar width/min-width280px; fixed left0/top0/bottom0; z-index1010; bottom padding24px; background#262D34. Subtle inset shadow `inset -8px 0 8px -8px rgba(134,110,110,.25)`. Border-right width0 in reference.
+- Logo region100px high/line-height100px; horizontal padding25px; sticky; large logo image height24px, small logo26px; provide target light/dark logo variants. Preserve intrinsic aspect ratio.
+- Sidebar scroll area height`calc(100% - 100px)` with custom scrollbar; content and sidebar scroll independently.
+- Topbar sticky top0,z1005,height100px;background canvas; left padding280px, transitioning with sidebar. Header flex between,vertically centered. No heavy white floating topbar/card.
+- Page content margin-left280px; min-height`calc(100vh - 100px)`;padding-bottom60px for footer;position relative. Shell transitions300ms ease-in-out.
+- Footer height60px,absolute bottom0,width available content,padding0 12px,muted#8486A7,small subtle card shadow. Ensure tall pages flow and short pages reach viewport bottom without overlaying forms.
+
+### Menu rows
+
+Top-level link padding10px25px,gap12px,nowrap,15px text,22px icon; each nav item adds1px vertical padding. Active link font500,3px left primary border,orange icon; active/hover text white on dark sidebar,transparent hover surface. Group caption height36px,padding10px31.25px. Do not add rounded pill selection backgrounds.
+
+Chevron is Boxicons down arrow,opacity0.6,size18.75px,right25px; rotates-180deg over200ms when expanded. Submenu outer indent12px; item padding5px25px; link padding2.5px25px,size14.25px; submenu hover translatesX5px/300ms. Only one peer menu is open at a time, except ancestors needed to show the active route. Activate current route ignoring query/hash, open all required parents, set `aria-expanded`, and scroll the active sidebar item into view. Reference scroll waits200ms then uses600ms easeInOutQuad; equivalent controlled scrolling is acceptable.
+
+### Layout modes
+
+| Mode | Expected behavior |
+| --- | --- |
+| `default` | Expanded280px sidebar |
+| `sm-hover-active` | Default observed expanded state with small-hover pin control |
+| `condensed` |75px narrow rail; small logo; labels/group headings/badges hidden; content/topbar offset75px; hover reveals205px submenu flyout |
+| `sm-hover` |75px rail; entire sidebar expands on hover to280px; content remains narrow-rail offset; pin toggles active mode |
+| `hidden` | Sidebar offscreen at margin-left-280px; content/topbar offset0; toggle opens over content with backdrop/body scroll lock |
+
+Condensed width75px and content margin75px were confirmed after transition settled. The reference condensed sidebar uses absolute positioning; avoid accidental behavior changes if target needs a fixed rail—explicitly document any accessibility/layout adaptation. Hover-only modes need keyboard focus/click equivalents for usable target navigation.
+
+### Responsive shell
+
+**JavaScript uses≤1140px as hidden-sidebar threshold**, not Bootstrap's992px. It applies on initial config and window resize without overwriting saved desktop preference. Above1140 restore configured menu mode. In hidden mode toggle sets`sidebar-enable`,sidebar slides in atz1055 and creates dismissible backdrop; outside click closes,body overflow restored. Avoid duplicate backdrops,stale scroll locks or a resize leaving the page unscrollable.
+
+Other source rules:≤600px topbar dropdown uses full available width and static dropdown positioning;≤375px topbar horizontal padding12px. Bootstrap grid breakpoints576,768,992,1200,1400 apply to content. Test1140/1141 independently of these.
+
+## 6. Topbar controls and their contracts
+
+| Control | Exact icon | UI behavior / target integration |
+| --- | --- | --- |
+| Sidebar toggle |`solar:hamburger-menu-broken`|Toggle condensed or mobile offcanvas |
+| Theme |`solar:moon-bold-duotone`|Switch global light/dark |
+| Notifications |`solar:bell-bing-bold-duotone`|Dropdown with count; target notification feed |
+| Theme settings |`solar:settings-bold-duotone`|Right settings drawer |
+| Activity |`solar:clock-circle-bold-duotone`|Right activity timeline drawer |
+| Profile avatar |Target user avatar|Account dropdown with authorized destinations |
+| Search |Reference search icon/adornment|Target search;clear/dropdown behavior |
+
+Topbar icons24px. Circular transparent control padding8px,color#707793/orange hover,300ms. Search height42px,bg#EAE8E8,radius8,padding8px15px8px40px;icon18px,left11px,vertical center. Notification counter red pill at top7/right-7,10px type,padding3px6px; sample count3 is demo data.
+
+Search source shows dropdown when text length>0 on focus/keyup,close clears input and hides dropdown. It does **not** establish a real search API. Target implementation must query its existing search provider,debounce if appropriate,cancel stale responses and show loading/empty/error. Never display static demo users as real search results.
+
+The source repeats`id="theme-settings-btn"` for settings/activity; fix duplicate IDs in the target. Use unique accessible names for every icon-only control. Notifications/profile menus support keyboard,Escape and focus restore. No logout action should bypass the target's existing logout contract.
+
+## 7. Icons — match the actual family
+
+Use Solar's**bold-duotone** icons for primary navigation/KPIs, **broken** variants for many row actions, and Boxicons for supporting glyphs. Do not replace them with emoji,random mixed stroke sets or unrelated Lucide icons and call it identical.
+
+| Role | Icon identifier |
+| --- | --- |
+| Dashboard |`solar:widget-5-bold-duotone`|
+| Products |`solar:t-shirt-bold-duotone`|
+| Category |`solar:clipboard-list-bold-duotone`|
+| Inventory |`solar:box-bold-duotone`|
+| Orders |`solar:bag-smile-bold-duotone`|
+| Purchases |`solar:card-send-bold-duotone`|
+| Attributes |`solar:confetti-minimalistic-bold-duotone`|
+| Invoices |`solar:bill-list-bold-duotone`|
+| Settings |`solar:settings-bold-duotone`|
+| Profile/reviews |`solar:chat-square-like-bold-duotone`|
+| Roles |`solar:user-speak-rounded-bold-duotone`|
+| Permissions |`solar:checklist-minimalistic-bold-duotone`|
+| Customers |`solar:users-group-two-rounded-bold-duotone`|
+| Sellers |`solar:shop-bold-duotone`|
+| Coupons |`solar:leaf-bold-duotone`|
+| Chat |`solar:chat-round-bold-duotone`|
+| Email |`solar:mailbox-bold-duotone`|
+| Calendar |`solar:calendar-bold-duotone`|
+| Todo |`solar:checklist-bold-duotone`|
+| Help |`solar:help-bold-duotone`|
+| FAQ |`solar:question-circle-bold-duotone`|
+| Policy |`solar:document-text-bold-duotone`|
+| Authentication |`solar:lock-keyhole-bold-duotone`|
+| Widgets |`solar:atom-bold-duotone`|
+| Base UI |`solar:bookmark-square-bold-duotone`|
+| Advanced UI |`solar:case-round-bold-duotone`|
+| View row |`solar:eye-broken`|
+| Edit row |`solar:pen-2-broken`|
+| Delete row |`solar:trash-bin-minimalistic-2-broken`|
+
+Sidebar22px,topbar24px,row actions18px. Product-list actions: view`btn-light`,edit`btn-soft-primary`,delete`btn-soft-danger`,all small buttons. Resolve icons through locally packaged SVG components or a reliable pinned integration. If using a custom element,register it once and allocate dimensions before load. Render accessible names on actions;decorative SVGs aria-hidden. Some missing source renderings must be repaired,not reproduced.
+
+## 8. Dashboard composition and charts
+
+Reference DOM layout:
+
+1. Topbar “Welcome!” title.
+2. Full-width soft danger/technical-difficulty banner (demo content; omit unless target has a real alert).
+3. Summary area with4 KPI cards.
+4. Performance chart with ALL/1M/6M/1Y controls.
+5. Conversions radial gauge, Sessions by Country vector map, Top Pages table.
+6. Recent Orders table + Create Order + pagination/count.
+7. Footer.
+
+At≥1400px KPI area is`col-xxl-5` and Performance`col-xxl-7`; each KPI is`col-md-6`,so four cards in a2×2 block. Below1400 they span separate rows; this explains the observed two-column KPI layout and full-width Performance card at1363px. Secondary three cards use`col-lg-4`; stack below992px. At small widths KPIs stack below768px. Do not incorrectly use a single four-across KPI row everywhere.
+
+### KPI card
+
+White,radius12,no border,shadow0 3px4px rgba(0,0,0,.03),margin-bottom24,overflow hidden. Body24px, icon tile about 56px square (`avatar-md`), primary-soft background. Label14px,large24px Hanken value,aligned opposite icon. Footer12px24px,background`rgba(238,242,247,.5)`,trend icon/percentage green or red,left period text,right View More. Reference sample labels Total Orders,New Leads,Deals,Booked Revenue are not required business entities in target.
+
+### Performance source chart
+
+ApexCharts mixed chart,height313px,type line; Page Views bar + Clicks area; colorsorange#FF6C2F andgreen#22C55E;bar columnWidth30%,barHeight70%,radius3;stroke widths[0,2],smooth curve;area vertical gradient opacity.5→0,stops0/90;markers0,hover4,stroke2;toolbarhidden. X categoriesJan–Dec,no axis ticks/border. Ymin0;horizontal dashed grid3,no vertical grid;grid padding top0/right-2/bottom0/left10. Legend centered,offsetY5,marker9×9/radius6,item margin10. Shared tooltip formats numeric y toone decimal+`k` in source; target must use real units and locale.
+
+ALL/1M/6M/1Y visual controls exist; the dashboard JS does not establish real data filtering for them. Implement active state plus the target's real date/filter query,not a cosmetic button that never changes data.
+
+### Conversions
+
+RadialBarheight292,startAngle-135/end135,value atoffsetY55,size20px,name14px atoffsetY100;track`rgba(170,184,197,.2)`,margin0;stroke dash4;source series65.2,labelReturning Customer. Atbreakpoint380 height180. Footer shows This Week/Last Week comparison and View Details. Target supplies real metric,baseline and destination;use accessible textual summary even if SVG chart fails.
+
+### Map
+
+jsVectorMap`world`;scroll zoomtrue,zoom buttonsfalse,markersSelectabletrue. Regions`rgba(169,183,197,.3)`,markerspurple#7F56DA→selectedgreen#22C55E. Demo markersCanada/Brazil/Russia/China/US are samples;target data determines locations. Ensure map is not a keyboard/scroll trap. Provide an equivalent country table if unavailable.
+
+Charts source was available but blank in the observed dashboard;verify libraries/theme integration and reserve intended chart height to prevent collapse/layout shift. No fake static chart should be labeled real analytics.
+
+## 9. Cards and common content blocks
+
+One shared Card primitive: surface theme-aware,12px radius,border0,min-width0,flex column,word-wrap,subtle shadow. Body24px;header18px24px with title16px/600;footer uses similar shell spacing unless utilities override. Card titles margin0. Card links/header actions align center,wrap as needed on mobile. Do not force fixed heights on record/detail forms;use equal-height grid variants only for comparable panels.
+
+Support image cards,card groups,horizontal cards,overlay/image headers,contextual colors,portlet close/reload where the target uses them. Reference portlet refresh injects a temporary loader and later removes it;this is a demo delay,not an API refresh. Target Reload must invoke the real query and resolve on completion,with error retry. Target Close hides a presentational widget only unless another action is explicitly authorized;do not convert it into deleting a business record.
+
+Avatars:sm36px,md56px,lg72px;initials and theme-soft backgrounds;circles only when`rounded-circle`. Product-list thumbnail uses56px light rounded tile. Provide deterministic empty/error image fallback and alt text. Profile source includes an orange geometric cover pattern;do not apply that background globally.
+
+## 10. Tables — native and enhanced
+
+### Shared table primitive
+
+| Detail | Reference value |
+| --- | --- |
+| Text |Play14px/21px,body tone |
+| Header |600 weight,light/subtle background |
+| Cell padding |13.6px13.6px (`.85rem`) |
+| Compact table |8px8px |
+| Divider |1px theme border |
+| Header surface example |`rgba(238,242,247,.5)`|
+| Row hover |black at2% opacity |
+| Striped rows |black at2% opacity |
+| First-cell inset example |24px |
+| Alignment |vertical middle via table-centered |
+| Overflow |`.table-responsive`,horizontal auto scroll |
+| No wrap |table-nowrap on dense record lists |
+
+Use genuine`table/thead/tbody/th/td`,scope headers,accessible selection labels and correctly typed values. Card table sections often remove table margin (`m-0`) and body padding;do not add double24px padding around a full-bleed table. Native utility variants:striped,bordered,borderless,small,hover,contextual,caption,responsive. Keep header/body column alignment during scroll.
+
+### Business list pattern
+
+Header title left,primary small Add action and period/filter dropdown right. Reference product list has selection checkbox,ProductName&Size,Price,Stock,Category,Rating,Action;thumbnail56px,two-line name/meta;stock left and sold separate lines;rating star on light chip;view/edit/delete icons in light/orange-soft/red-soft small controls. The demo's links are placeholders. Target must keep its own columns and authorized row actions. Pagination footer sits below table,typically right aligned;use real total,page,page-size and stable row IDs.
+
+Orders list/detail,invoices,users and permissions reuse visual primitives with their own data. Do not change data semantics to look like an ecommerce table. Table filtering should preserve the target's server pagination,sort and URL query rules;avoid sorting only the visible page while claiming a global sort.
+
+### Grid.js pattern
+
+Showcase variants:basic,pagination,search,sorting,loading,fixed header,hidden columns. Keyword search was directly tested withAlice and returnedone result. Search input14px,padding8px16px8px40px,1px#D8DFE7 border,radius8. Grid header14px/600,padding6.8px13.6px,backgroundlight at75% opacity;read appendix for Grid.js-specific body/footer/pagination rules.
+
+Use Grid.js only if appropriate to target stack;an existing table engine may reproduce these styles/behaviors without replacing all data code. Required contracts:search query,sort direction,page navigation,page-size,total/loading/empty/error,select visible/all with explicit scope,stable IDs and no duplicates. Hidden columns are not authorization;restricted fields must not be sent/rendered. Loading source uses demo async data;real loading must follow actual requests.
+
+## 11. Buttons, links and action states
+
+| Variant | Padding | Type | Radius | Approx height including1px border |
+| --- | --- | --- | --- | --- |
+| Normal |8px16px |14px/21px |12px |39px |
+| Small |5.568px12px |12.6px/18.9px |8px |32px |
+| Large |10px24px |16px/24px |16px |46px |
+
+Normal weight 400. Colors use the semantic tokens. Primary is filled orange/white; outline uses transparent fill with semantic border/text and fills on hover; soft uses a 10% semantic fill and fills on hover. Primary source hover is #D95C28, active #CC5626; verify border variants in the source lookup. Disabled opacity is .65 with native disabled semantics. Preserve visible focus: the source focus-ring width is .15rem (2.4px), with an orange25% token; button-specific focus varies. Color/background/border/shadow transitions are150ms ease-in-out. There is no universal press scaling or bounce.
+
+Rounded-pill is an explicit variant,not the default. Include icon-only,icon+text,groups,dropdown split/grouped buttons and block buttons only where target needs them. Maintain touch hit area through padding/wrapper if using small32px action icons. Label destructive controls and connect confirmations to existing business rules. Pending state should prevent repeat submission and preserve width;error should re-enable action and show message.
+
+Link primary reference default muted#8486A7/hover#D95C28,not all links orange. Particular table links may use heading/body token;respect local variants.
+
+## 12. Forms and advanced controls
+
+### Basic inputs
+
+Input/select/textarea width100%, white theme surface,14px/21px, weight400, padding8px16px, border1px #D8DFE7 and radius8px. Normal single-line height measured39px. Focus border #B0B0BB, no input shadow; retain an accessible visible focus treatment. Placeholder uses secondary color at full opacity; disabled uses canvas background at full opacity. Labels14px/500, bottom margin6.4px. Select right padding48px, chevron14×10px positioned16px from the right. Size variants, readonly, file input, range, color, input groups, floating labels and horizontal forms are in the catalog; preserve target constraints.
+
+Checkbox measured15.56px square, radius3.5px; radios are circular and checked state is primary. Switch track/thumb metrics are in the appendix. Checkbox/radio groups retain accessible fieldset/legend and touch hit areas. Invalid feedback uses danger; valid uses success. Source `.needs-validation` checks browser validity and adds `was-validated`; server validation remains authoritative. Do not fake successful saves after client checks.
+
+### Advanced control contracts
+
+| Control | Reference integration and target requirements |
+| --- | --- |
+| Searchable/multiple select | Choices: single, multi, groups, search on/off, remove items, limits, unique tags and disabled states; synchronize target form values. |
+| Date/time | Flatpickr: basic, datetime, human-friendly, min/max, disabled dates, multiple, range, inline, time, 24h, time limits and preload; preserve target timezone and ISO storage. |
+| Input masks | Inputmask through `data-toggle=input-mask`; a visual mask must not corrupt stored values. |
+| Rich text | Quill Snow/Bubble; toolbar, content normalization and safe server rendering. |
+| Uploads | Dropzone: drop/click, preview, remove, progress and error; use the real target upload endpoint and validation. |
+| Range | Keyboard support, min/max and selected values. |
+| Wizard | Horizontal/vertical steps, validation before advancing, Back preserves data, final step submits once. |
+| Clipboard | Copy target content, success feedback and permission/error handling. |
+
+The product-create upload box measured a 2px dashed #D8DFE7 border, 6px radius, 20px padding and 150px minimum height. The demo recommends 1600×1200 (4:3), PNG/JPG/GIF; these are demo product requirements, not universal limits for another project. Its form uses a preview card plus grouped photo, information and pricing cards, choice selects, size/color toggles, textarea, input groups and footer actions. Bind the target schema; do not copy sample discount math or the source label typo “Tex”.
+
+The wizard script is referenced at `../assets/js/components/form-wizard.js`, outside the admin asset root; the collector did not retrieve it. Implement the documented wizard behavior or obtain a valid dependency; do not claim this script was verified.
+
+## 13. Menus, dialogs, panels and feedback
+
+### Dropdown
+
+Minimum width 160px, 14px font, 4px vertical padding, 8px radius, theme surface, 1px theme border and subtle shadow. Item hover uses the tertiary surface. Disabled items are noninteractive. Support group dividers, aligned placement, keyboard controls and viewport collision handling. At ≤600px topbar menus become full-width.
+
+### Modal
+
+Normal width 500px, small 300px, large 800px, XL 1140px from Bootstrap source sizing. Surface follows the theme, radius 16px. Header/body padding 24px; footer padding 20px with child margins accounting for an 8px gap. Variants include centered, scrollable, top/bottom, static backdrop, toggling between modals, fullscreen and breakpoint fullscreen.
+
+Dialog fade/translation is 300ms ease-out, backdrop fade 150ms. Backdrop uses the theme emphasis color at 50% layer opacity. Do not treat a mid-animation computed opacity of zero as final design. Modal opening was directly tested. Required target behavior: focus trap, Escape/backdrop policy, focus restoration, body scroll lock, accessible label and scrollable body. Static backdrop must not close on outside click. Destructive confirmation waits for the real backend result. Never show success after a failed request.
+
+### Offcanvas
+
+Settings panel opens from the right, measured width 280px, theme surface, no border in its markup, 300ms ease-in-out translation. Header contains title/Close; body scrolls; footer contains Reset. Activity panel uses a timeline with avatars, attachments, status and timestamps; populate it from the target audit feed. Generic start/end/top/bottom/responsive variants are in the component catalog; not every drawer has the settings panel's 280px width.
+
+### Settings state
+
+Root attributes: `data-bs-theme`, `data-topbar-color`, `data-menu-color`, `data-menu-size`. Defaults: light/light/dark/sm-hover-active. Controls cover global Light/Dark, topbar Light/Dark, menu Light/Dark, and Default/Condensed/Hidden/Small Hover Active/Small Hover. Reset restores defaults.
+
+Reference persists JSON in **sessionStorage `__LARKON_CONFIG__`**. The target may namespace the key or use its own preference API; document any change in persistence duration. Initialize before paint or through an SSR-compatible bootstrap to avoid a flash. Guard invalid saved JSON. A viewport change must not erase the preferred desktop menu mode.
+
+### Feedback components
+
+- Alerts: semantic filled/subtle/outline/dismissible variants. Show real messages, not the demo's server warning.
+- Badges: rounded/pill, status/dot/count; standard padding `.3em .6em`, weight 600, line-height 1.
+- Progress: semantic track/bar, stacked/striped/animated variants and accessible numeric value.
+- Spinners: border/grow, size/color variants and screen-reader label; no permanent loading.
+- Placeholders: reserve content bounds while fetching.
+- Toasts: Bootstrap/Toastify variants, position/duration/Close and stop-on-focus behavior. Use target notifications.
+- Tooltips/popovers: hover/focus/click as appropriate; essential information cannot depend on hover alone.
+- Accordion, collapse and tabs: correct ARIA relationships, keyboard interaction and controlled state.
+
+## 14. Motion and interaction timing inventory
+
+| Interaction | Source timing/behavior |
+| --- | --- |
+| Shell/sidebar/topbar/content | 300ms ease-in-out |
+| Topbar control color | 300ms ease-in-out |
+| Sidebar chevron | 200ms transform |
+| Submenu text hover | translateX(5px), 300ms |
+| Collapse height | 350ms ease |
+| Generic fade | 150ms linear |
+| Button states | 150ms ease-in-out |
+| Input border/focus shadow | 150ms ease-in-out |
+| Modal dialog | 300ms ease-out |
+| Offcanvas/settings | 300ms ease-in-out |
+| Sidebar active-item scroll | 200ms initial delay, 600ms easeInOutQuad |
+| Counter utility | Increment toward `data-target`; source uses 250 steps with 1ms scheduling, not a guaranteed total duration. |
+| Swiper showcase | 2500ms autoplay delay, resume after interaction; effect depends on variant. |
+| Clipboard caption | Restore after 2000ms. |
+| Portlet reload | Demo random delay of about 500–2000ms; replace with the real request lifecycle. |
+
+Swiper examples include default, navigation, dynamic/fraction/custom/progress pagination, scrollbar, vertical, mousewheel, fade, coverflow, flip, creative and responsive. These are optional showcase capabilities; do not animate every dashboard panel. The responsive example uses 1 slide/gap10, ≥768px 2/gap40, ≥1200px 3/gap50. Respect reduced motion, avoid unnecessary autoplay/count-up, and clean up plugin instances on route unmount. Do not invent page entrance parallax or card lifting.
+
+## 15. Business templates and application functions
+
+### What “same functions” means
+
+There are three layers: a **visual affordance** such as a styled Create button; a **client interaction** such as a dropdown or client-side filtering; and a **business operation** that persists data with authorization and audit. Larkon's public HTML establishes primarily the first two. Preserve the third through the target's existing system. Never replace a real handler with `#!`.
+
+| Template family | Reusable layout/function mapping |
+| --- | --- |
+| Lists | Card header actions, period/filter, selection, table/row actions and pagination. |
+| Create/edit | Grouped cards, labels, validation, advanced inputs, save/cancel and pending/error states. |
+| Product grid/detail | Filter controls, cards, gallery, variants, pricing and tabs, only if the target has these entities. |
+| Orders/purchases | Summary cards, status badges, item tables, totals, tracking/timeline and authorized actions. |
+| Invoices | Customer/seller header, line items, tax/discount/total, print/export; preserve target Decimal math. |
+| Customers/sellers/profile | Avatar/contact summary, statistics, history, tabs and detail forms. |
+| Roles/permissions | Permission grid/list/toggles; enforce server RBAC, not CSS visibility. |
+| Coupons/reviews | Status/filter/form/rating patterns using target business rules. |
+| Settings | Tabs or grouped cards, switches, choices and save feedback. |
+| Help/FAQ/policy | Search/navigation, accordions and readable article cards. |
+| Authentication | Split/illustrated shell, logo, validation and existing remember/forgot/login flow. |
+| Pricing/maintenance/404 | Utility layouts using theme primitives and target copy. |
+| Chat | Conversation list/search, active thread, message bubbles, composer, attachments and target transport. |
+| Email | Mailbox navigation, selection, message view and compose; target sending handler remains authoritative. |
+| Calendar | FullCalendar views/events, create/edit modal, optional drag/resize, target persistence. |
+| Todo | Task lists, completion checkboxes, progress and target task actions. |
+
+Do not import demo contacts, email addresses, orders, users, permissions, statistics or credentials into production. Sample invoices/chart series are fixtures only. Unauthorized actions remain blocked at server level after styling changes.
+
+### Required target behavior
+
+Each interactive component needs a defined value/state, event handler, request where applicable, permission checks, loading/error/empty state and a meaningful test. Preserve existing optimistic updates and roll back on failure. Global filters reset page index, retain query parameters and cancel stale queries. Selection explicitly distinguishes the visible page from all filtered records. Exports follow backend authorization and current filters. Financial totals retain target rounding/Decimal rules. Uploads validate on client/server, show real progress and preserve existing files after a failed save.
+
+## 16. Responsive implementation matrix
+
+| Width | Expected checks |
+| --- | --- |
+| 320–375px | Topbar horizontal padding12px at ≤375; controls fit, forms stack and tables scroll internally. |
+| 390/430px | Hidden menu overlay, touch controls, fitting dialogs and keyboard-safe form actions. |
+| 576px | Bootstrap sm grid/forms/dialog rules. |
+| 768px | md grid, two-column KPIs and configured multi-column forms. |
+| 992px | lg grid, three secondary dashboard panels. |
+| 1140px | Hidden/offcanvas sidebar; zero reserved left offset. |
+| 1141px | Restore configured desktop sidebar. |
+| 1200px | xl grid and heading size caps. |
+| 1363px | Measured expanded280px shell, KPI2×2 block with Performance below. |
+| 1400/1440px | xxl 5/7 KPI/Performance composition. |
+| 1920px | Fluid95% container, intentional spacing and sensible control widths. |
+
+Mobile CSS/JS was collected; rendered mobile parity remains a target QA requirement. Keep horizontal overflow inside table wrappers; do not shrink all text to fit. Filters/forms wrap without changing logical field order. Small-screen sidebar overlays rather than pushing content. Charts resize when the rail changes or a hidden tab becomes visible, using ResizeObserver or the target chart adapter. Respect safe areas for fixed actions.
+
+**This reference does not establish a mobile bottom dock.** Do not copy a previous storefront dock into this dashboard without a separate requirement.
+
+## 17. Shared components and implementation sequence
+
+```text
+DashboardThemeProvider / ThemeBootstrap
+DashboardShell
+  Sidebar / SidebarGroup / SidebarItem / SidebarSubmenu
+  Topbar / GlobalSearch / NotificationMenu / ProfileMenu
+  MainContainer / PageHeader / Footer
+Card / CardHeader / CardBody / CardFooter / MetricCard
+Button / IconButton / Badge / Alert / Avatar / Tooltip
+DataTable / TableToolbar / RowActions / Selection / Pagination
+Field / Input / Select / MultiSelect / Textarea / Checkbox / Radio / Switch
+DateTimePicker / RichText / Upload / Range / Wizard
+Dropdown / Tabs / Accordion / Dialog / Drawer / Confirm / Toast
+ChartCard / ChartLegend / EmptyState / LoadingState / ErrorState
+```
+
+1. Audit routes, layouts, shared components, CSS cascade, fonts, icon registration and existing tests. Map actual modules to these patterns and record current working actions.
+2. Introduce scoped dashboard tokens, typography, theme initialization and icons. Retire conflicting dashboard styles while preserving the public website.
+3. Implement the shell and sidebar states, topbar, settings and footer. Verify 1140/1141px offsets and initial theme rendering.
+4. Implement card/button/badge/field/table primitives. Restyle a representative list, form and detail page and validate the real handlers.
+5. Apply shared primitives throughout all remaining existing dashboard pages. Advanced widgets use scoped adapters with lifecycle cleanup and theme-aware colors.
+6. Complete visual/functional QA and fix differences. The task is not complete if only the dashboard landing page changes while forms/tables keep the old theme.
+
+Use CSS modules, a scoped theme layer or another approach appropriate to the target. Global Bootstrap imports can reset unrelated components; isolate them or translate resolved values into target tokens. Preserve SSR data labels, tables and routes, with interactive client islands where needed. Do not disable SSR for the entire admin to avoid plugin integration. Remove listeners/instances on unmount; avoid hydration mismatches, duplicate IDs, infinite effects and stale saved preferences.
+
+## 18. Verification and acceptance
+
+### Visual checks
+
+- Compare stable light/dark screenshots with matching viewport, content and menu state.
+- Sidebar280/75px and offsets agree; topbar100px, footer60px, container95% with12px inner gutter.
+- Play body/Hanken headings; orange#FF6C2F, canvas#F9F7F7 and sidebar#262D34.
+- Card radius12/padding24/subtle shadow; normal button39px/radius12; input39px/radius8.
+- Tables use13.6px padding, correct headers/dividers, action icons18px and internal overflow.
+- Sidebar active3px orange border/icon, proper chevron and submenu motion.
+- Verify dialogs/drawers, focused, disabled, loading, empty and error states.
+- No unresolved icon elements, blank charts, missing fonts or runtime errors.
+
+### Functional checks
+
+- Existing routes and active parents remain correct; keyboard/touch menus work.
+- Theme/menu/topbar settings persist/reset/resize correctly without scroll-lock leaks.
+- Search/filter/sort/pagination/select/export follow actual data contracts.
+- View/edit/create/save/cancel/delete retain permissions, validation and feedback.
+- QA does not accidentally send real mail, place orders, pay or modify production data.
+- Dates, multiselect, editor and upload controls retain and serialize correct values.
+- Dialogs restore focus/scroll; Escape and backdrop behavior are correct.
+- Charts use real data with accessible summaries and working date filters.
+- Run existing lint/typecheck/build and appropriate tests for changed flows.
+- Every dashboard footer includes **Developed by TaiefLab** → https://taieflab.com.
+
+Final report: what changed, shared components/files affected, checks run, how to test and remaining parity gaps. If something is demo-only or blocked, say so; preserve real target behavior instead of faking it. Compiled CSS alone is not proof of exact parity.
+
+## 19. Copyable coding-agent directive
+
+> Implement this complete Larkon dashboard specification in the current project. Inspect the repository first, map its existing modules and components, then migrate the shared shell, design tokens, fonts, Solar/Boxicons icon treatment, cards, tables, buttons, forms, menus, dialogs, theme modes, responsive behavior and applicable animations. Preserve existing routes, APIs, SSR, authentication, permissions, data and business logic. Do not add modules merely because the demo contains them, and do not replace real functionality with placeholder links. Match the exact measured values and source rules in this file; verify every viewport and state before claiming parity. Use the project's own branding/content and add Developed by TaiefLab linked to https://taieflab.com in the dashboard footer. Finish implementation and appropriate checks, then report what changed, how to test and any unresolved differences.
+
+## 20. Source index
+
+All relative paths resolve beneath `https://techzaa.in/larkon/admin/`.
+
+- `assets/css/app.min.css`: Bootstrap5.3.3 plus Larkon tokens, layout, components and plugin overrides.
+- `assets/css/vendor.min.css`: vendor widget styles.
+- `assets/css/icons.min.css`: icon font declarations/glyphs.
+- `assets/js/config.js`: pre-paint theme/session configuration and1140px rule.
+- `assets/js/app.js`: Bootstrap components, validation/choices/masks, portlets, clipboard, dragging, Swiper, toasts and layout customizer.
+- `assets/js/pages/dashboard.js`: radial/performance/map source configuration.
+- `assets/js/components/table-gridjs.js`: enhanced table examples.
+- Page/component initializer references appear in the generated catalog below.
+
+The catalog describes **source coverage of118 pages**, not118 independent browser audits. Component demo pages contain code examples and documentation; implement their reusable patterns, not documentation panels or Copy buttons inside business pages.
+
+## 21. Complete linked-page source catalog
+
+Read the relevant page and initializer when implementing that component family. Headings and fields are extracted from source; repeated code-example text is intentionally condensed. “Source” does not imply a real backend exists.
+
+
+### Business and application templates
+
+| Page | Source component coverage |
+| --- | --- |
+| `pages-profile.html` | Gaston Lapierre; 3+ Years Job; 5 Certificate; 2 Internship; Personal Information; About; My Approach :; Marketing expertise; Marketing interests; My Core Skills :; +12; +24; Share your profile; Popular Filters; Gaston Lapierre , Project Head Manager . Nov 16; Do you have any experience with deploying @Hubspot for a SaaS business with both a direct and self-serve model?; Gaston Lapierre , Project Head Manager . Nov 11; Looking for a new landing page optimization vendor; Gaston Lapierre , Project Head Manager . Nov 08; Why Your Company Needs a CRM to Grow Better? |
+| `apps-chat.html` | Chat; Gaston Lapierre 10:20am; Fantina LeBatelier 11:03am; Gilbert Chicoine now; Mignonette Brodeur Yesterday; Thomas Menard Yesterday; Melisande Lapointe Yesterday; Danielle Despins 7/8/21; Onfroi Pichette 7/8/21; Kari Boisvert 7/8/21; New Group; #General; #Company; #Life Suckers; #Drama Club; #Unknown Friends; #Family Ties; #2Good4U; New Contact; Gaston Lapierre; Fantina LeBatelier; Gilbert Chicoine; Mignonette Brodeur; Thomas Menard; Melisande Lapointe; Danielle Despins; Profile; Setting; Account Privacy, security, change number; Chats Theme, wallpapers, chat history; Display; Chat Setting; Notification Message, group, call tones; Messages; Groups |
+| `pages-pricing.html` | Simple Pricing Plans; Free Pack; $0 / Month; Professional Pack; $19 / Month; Business Pack; $29 / Month; Enterprise Pack; $49 / Month |
+| `pages-faqs.html` | Frequently Asked Questions; General; Can I use Dummy FAQs for my website or project?; Are Dummy FAQs suitable for customer support purposes?; Do Dummy FAQs require attribution?; Refunds; How do I request a refund?; What is the refund policy?; How long does it take to process a refund?; Payments; Can I test my website/app with Dummy Payments?; Are Dummy Payments secure?; How can I differentiate between a Dummy Payment and a real one?; Support; How do I contact customer support?; Is customer support available 24/7?; How long does it take to receive a response from customer support?; Can't find a questions? |
+| `auth-lock-screen.html` | Hi ! Gaston |
+| `auth-signin.html` | Sign In |
+| `index.html` | 13, 647; 9, 526; 976; $123.6k; Performance; Conversions; 23.5k; 41.05k; Sessions by Country; Top Pages; Recent Transactions; Recent Orders; Columns: Page Path, Page Views, Exit Rate, Order ID., Date, Product, Customer Name, Email ID, Phone No., Address, Payment Type, Status |
+| `product-list.html` | All Product List; Columns: , Product Name & Size, Price, Stock, Category, Rating, Action |
+| `product-grid.html` | Custom Price Range :; $80 $100 (30% Off); $136 $150 (30% Off); $219 $250 (30% Off); $76 $100 (30% Off); $110 $130 (30% Off); $231 $250 (30% Off); $89 $100 (30% Off); $132 $150 (30% Off); $77 $100 (30% Off); $110 $140 (30% Off); $77 $110 (30% Off); $222 $250 (30% Off) |
+| `product-details.html` | New Arrival; $80.00 $100.00 (30%Off); Colors > Dark; Size > M; Quantity :; Description :; Available offers :; Items Detail; Top Review From World; Henny K. Mark; Jorge Herry |
+| `product-edit.html` | Men Black Slim Fit T-shirt (Fashion); Price :; $80 $100 (30% Off); Size :; Colors :; Add Product Photo; Drop your images here, or click to browse; Product Information; Pricing Details |
+| `product-add.html` | Men Black Slim Fit T-shirt (Fashion); Price :; $80 $100 (30% Off); Size :; Colors :; Add Product Photo; Drop your images here, or click to browse; Product Information; Pricing Details; Fields: S, M, Xl, XXL, , Product Name, Product Categories, Brand, Weight, Gender, XS, 3XL, Description, Tag Number |
+| `category-list.html` | Fashion Categories; Electronics Headphone; Foot Wares; Eye Ware & Sunglass; All Categories List; Columns: , Categories, Starting Price, Create by, ID, Product Stock, Action |
+| `category-edit.html` | Fashion Men , Women & Kid's; Seller; 46233; FS16276; Add Thumbnail Photo; Drop your images here, or click to browse; General Information; Meta Options |
+| `category-add.html` | Fashion Men , Women & Kid's; Seller; 46233; FS16276; Add Thumbnail Photo; Drop your images here, or click to browse; General Information; Meta Options |
+| `inventory-warehouse.html` | Total Product Items; In Stock Product; Out Of Stock Product; Total Visited Customer; All Warehouse List; Columns: , Warehouse ID, Warehouse Name, Location, Manager, Contact Number, Stock Available, Stock Shipping, Warehouse Revenue, Action |
+| `inventory-received-orders.html` | Pending Review; Pending Payment; Delivered; In Progress; All Received Order; Columns: Order ID, Customer, Items, Amount, Payment Status, Received Status, Action |
+| `orders-list.html` | Payment Refund; Order Cancel; Order Shipped; Order Delivering; Pending Review; Pending Payment; Delivered; In Progress; All Order List; Columns: Order ID, Created at, Customer, Priority, Total, Payment Status, Items, Delivery Number, Order Status, Action |
+| `order-detail.html` | #0758267/90 Paid In Progress; Progress; Product; Order Timeline; The packing has been started; The Invoice has been sent to the customer; The Invoice has been created; Order Payment; 4 Order conform by Gaston Lapierre; Order Summary; Payment Information; Customer Details; Contact Number; Shipping Address; Billing Address; Columns: Product Name & Size, Status, Quantity, Price, Text, Amount |
+| `order-cart.html` | Have a Promo Code ?; Order Summary |
+| `order-checkout.html` | Personal Details; Shipping Details; Shipping Address :; Shipping Method :; DHL Fast Services; FedEx Services; UPS Services; Our Courier Services; Payment Method; Paypal; Credit card; Have a Promo Code ?; Order Summary; Streaming box shipping information; 30 Day money back guarantee; Thank You !; $737.00 |
+| `purchase-list.html` | All Purchase Items; Columns: , ID, Order By, Items, Purchase Status, Date, Total, Payment Method, Payment Status, Action |
+| `purchase-order.html` | Total Orders; Order Items Over Time; Return Order; Fulfilled Orders Over Time; All Order Items; Columns: Customer Name, Email, Order Date, Total, Order Status, Action |
+| `purchase-returns.html` | Return Order 6.9%; Pending Return Order; Total Customer 8.9%; Return Order Received 9.1%; All Return Items; Columns: , ID, Order By, Items, Return Date, Total, Return Status, Action |
+| `attributes-list.html` | All Attribute List; Columns: , ID, Variant, Value, Option, Created On, Published, Action |
+| `attributes-edit.html` | Add Attribute |
+| `attributes-add.html` | Add Attribute |
+| `invoice-list.html` | Total Invoice; Pending Invoice; Paid Invoice; Inactive Invoice; All Invoices List; Columns: , Invoice ID, Billing Name, Order Date, Total, Payment Method, Status, Action |
+| `invoice-details.html` | Larkon Admin.; Issue From :; Larkon Admin.INC; Issue For :; Gaston Lapierre; Columns: Product Name, Quantity, Price, Tax, Total |
+| `invoice-add.html` | Issue From :; Issue For :; Columns: Product Name, Quantity, Price, Tax, Total; Fields: , Sender Name, Sender Full Address, Phone number, Invoice Number :, Issue Date :, Due Date :, Amount :, Status :, Sub Total :, Discount :, Estimated Tax (15.5%) :, Grand Amount : |
+| `settings.html` | General Settings; Store Settings; Localization Settings; Categories Settings; Reviews Settings; Vouchers Settings; Tax Settings; Customers Settings; Fields: Meta Title, Meta Tag Keyword, Store Themes, Layout, Description, Store Name, Store Owner Full Name, Owner Phone number, Owner Email, Full Address, Zip-Code, City, Country, Language |
+| `role-list.html` | Columns: Role, Workspace, Tags, Users, Status, Action |
+| `role-edit.html` | Roles Information; Fields: Roles Name, Add Workspace, Tag, User Name, Active, In Active |
+| `role-add.html` | Roles Information; Fields: Roles Name, Add Workspace, Tag, User Name, Active, In Active |
+| `pages-permissions.html` | Employees; Assigned Manager; Project; License Used; All Permissions List; Columns: , Name, Assigned To, Created Date & Time, Last Update, Action |
+| `customer-list.html` | All Customers; Orders; Services Request; Invoice & Payment; All Customers List; Columns: , Customer Name, Invoice ID, Status, Total Amount, Amount Due, Due Date, Payment Method, Action |
+| `customer-detail.html` | Michael A. Miner; Customer Details; Latest Invoice; Total Invoice; Total Order; Total Expense; Transaction History; 3,764 Points Earned; Payment Arrived; $ 1,340; All Account Total Balance; $4,700 +$232; Columns: Invoice ID, Status, Total Amount, Due Date, Payment Method |
+| `seller-list.html` | ZARA International (Fashion); 865; +4.5k; +2k; Rolex Watches (Watch); 261; +2.9k; +1.4k; Dyson Machinery (Electronics); 781; +5.3k; +3.1k; GoPro Camera (Electronics); 890; +10.6k; +6.3k; H&M (Fashion); 1309; +21.6k; +8.1k; Huawei Phone (Electronics); 356; +4.0k; Nike Clothings (Fashion); 12k; +19.0k; +16.0k; The North Face (Fashion); 1.6k; +13.9k; +2.1k |
+| `seller-details.html` | ZARA International; Profit by Product Category; Social Media :; Our Story :; Our Mission :; 865; +4.5k; +2k; +36k; $5,563.786 4.53%; Company Reviews; 5 star :; 4 star :; 3 star :; 2 star :; 1 star :; Latest Added Product; Accounting Revenue; $5,324,000; Customers +870; Orders; 458; Users; 870; Columns: , Product Name & Size, Tag ID, Category, Add Date, Items Published |
+| `seller-edit.html` | ZARA International (Fashion); 865; +4.5k; +2k; Add Brand Logo; Drop your images here, or click to browse; Seller Information; Seller Product Information |
+| `seller-add.html` | ZARA International (Fashion); 865; +4.5k; +2k; Add Brand Logo; Drop your images here, or click to browse; Seller Information; Seller Product Information |
+| `coupons-list.html` | 5,786 Items; 4 Coupons; $140.00; 8 Coupons; $235.00; 30% Special discounts for customers; 25 November - 2 December; All Product List; Columns: , Product Name & Type, Price, Discount, Code, Start Date, End Date, Status, Action |
+| `coupons-add.html` | Coupon Status; Date Schedule; Coupon Information; Coupons Types |
+| `pages-review.html` | Michael B. Coch; Theresa T. Brose; James L. Erickson; Lily W. Wilson; Sarah M. Brooks; Joe K. Hall; Jennifer Schafer; Nashida Ulfah |
+| `apps-email.html` | FREE; Medium; Hi Jorge, How are you?; This is an Air-mode editable area. |
+| `apps-calendar.html` | Event |
+| `apps-todo.html` | Sean Kemper; Victoria Sullivan; Liam Martinez; Emma Johnson; Olivia Thompson; Noah Garcia; Sophia Davis; Isabella Lopez; Ava Wilson; Oliver Lee; Columns: Task Name, Created Date, Due Date, Assigned, Status, Priority, Action |
+| `help-center.html` | Help Center; Getting Started with Larkon; Admin Settings; Server Setup; Login And Verification; Account Setup; Trust & Safety; Channel Setup; Permissions; Billing Help; Show Video |
+| `privacy-policy.html` | Privacy Policy; Introduction; Information We Collect; Our role in your privacy |
+| `pages-starter.html` | Page template with shared theme and route-specific content |
+| `pages-comingsoon.html` | 00 |
+| `pages-timeline.html` | Today; Completed UX design project for our client important; Yes! We are celebrating our first admin release.; We released new version of our theme Larkon.; Yesterday; We have archieved 25k sales in our themes; Left Timeline; 5 days ago; Join new team member Alex Smith; First release of Larkon admin dashboard template |
+| `pages-maintenance.html` | We are currently performing maintenance |
+| `pages-404.html` | Ooops! The Page You're Looking For Was Not Found |
+| `pages-404-alt.html` | Ooops! The Page You're Looking For Was Not Found |
+| `auth-signup.html` | Sign Up |
+| `auth-password.html` | Reset Password |
+| `widgets.html` | 13, 647; 9, 526; 976; $123.6k; $59.6k; $24.03k; $48.7k; $11.3k; $5.5k; Recent Project Summary; Today's Schedules; $123; Conversions; 23.5k; 41.05k; Performance; My Tasks; Friends Request (10); Victoria P. Miller; Dallas C. Payne; Florence A. Lopez; Gail A. Nix; Lynne J. Petty; Recent Transactions; Columns: Project, Client, Team, Deadline, Work Progress |
+
+### Base UI components
+
+| Page | Source component coverage |
+| --- | --- |
+| `ui-accordion.html` | Basic Example; Accordion Item #1; Accordion Item #2; Accordion Item #3; Flush Accordion; Always Open Accordion |
+| `ui-alerts.html` | Basic Example; Dismissible Alerts Example; Alert Link Example; Icons Alert Example; Additional Content Alert Example; Well done! |
+| `ui-avatar.html` | Basic Example; Rounded Circle; Images Shapes |
+| `ui-badge.html` | Heading; h1.Example heading New; h2.Example heading New; h3.Example heading New; h4.Example heading New; h5.Example heading New; Default & Pill Badges; Outline & Outline Pill Badges; Soft & Soft Pill Badges; Buttons & Position |
+| `ui-breadcrumb.html` | Default Example; Dividers Breadcrumb |
+| `ui-buttons.html` | Default Buttons; Rounded Buttons; Outline Buttons; Outline Rounded Buttons; Soft Buttons; Soft Rounded Buttons; Button Width; Button Sizes; Disabled Button; Icon Button; Button Group; Block Button |
+| `ui-card.html` | Card title; Special title treatment; Card Colored; Card Bordered; Horizontal Card; Stretched link; Card with stretched link; Card Group; Card Decks |
+| `ui-carousel.html` | Slides Only; With Controls; With Indicators; With Captions; First slide label; Second slide label; Third slide label; Crossfade; Individual interval .carousel-item; Disable touch swiping interval .carousel-item; Dark Variant interval .carousel-item |
+| `ui-collapse.html` | Default Example; Horizontal; Multiple Targets |
+| `ui-dropdown.html` | Single Button Dropdowns; Single Button Variant Dropdowns; Split Button Dropdowns; Dark Dropdowns; Dropdown Direction; Dropdown Menu Items; Dropdown options; Auto close behavior; Menu Content |
+| `ui-list-group.html` | Basic; Active items; Disabled items; Links and buttons; Flush; Numbered; Horizontal; Contextual classes; Custom content; List group item heading; Checkboxes and radios |
+| `ui-modal.html` | Default Modals; Modal title; Static Backdrop; Scrolling Long Content; Modal Position; Modal Heading; Toggle Between Modals; Modal 1; Modal 2; Optional Sizes; Extra large modal; Large modal; Small modal; Fullscreen Modal; Full screen modal; Full screen below sm; Full screen below md; Full screen below lg; Full screen below xl; Full screen below xxl; Modal Based Alerts; Well Done! |
+| `ui-tabs.html` | Nav Tabs; Tabs Justified; Nav Pills; Pills Justified; Tabs Vertical Left; Tabs Vertical Right |
+| `ui-offcanvas.html` | Default Buttons; Offcanvas; Static Backdrop; Colored with scrolling; Offcanvas with backdrop; Backdroped with scrolling; Offcanvas Position |
+| `ui-pagination.html` | Default Buttons; Rounded Pagination; Alignment; Sizing |
+| `ui-placeholders.html` | Default; Card title; How it works; Width; Color |
+| `ui-popovers.html` | Live demo; Popover Directions; Dismiss on Next Click; Hover; Custom Popovers; Disabled Elements |
+| `ui-progress.html` | How it works; Backgrounds Color; Striped Progress Bar; Height |
+| `ui-scrollspy.html` | First heading; Second heading; Third heading; Fourth heading; Fifth heading |
+| `ui-spinners.html` | Border Spinners; Color Spinners; Growing Spinners; Color Growing Spinners; Alignment; Size; Placement; Buttons Spinner |
+| `ui-toasts.html` | Basic Examples; Live example; Default Buttons; Custom Content; Transcluent; Placement |
+| `ui-tooltips.html` | Tooltip Direction; Color Tooltip |
+
+### Advanced UI components
+
+| Page | Source component coverage |
+| --- | --- |
+| `extended-ratings.html` | Basic Rater Example; Rater with Step Example; Custom Messages Example; ReadOnly Example; On Hover Event Example; Clear/Reset Rater Example |
+| `extended-sweetalert.html` | Basic; A Title with a Text Under; Message; Long content Images Message; Parameter |
+| `extended-swiper-silder.html` | Default Swiper; Navigation & Pagination Swiper; Pagination Dynamic Swiper; Effect Fade Swiper; Effect Creative Swiper; Effect Flip Swiper; Scrollbar Swiper; Vertical Swiper; Mousewheel Control Swiper; Responsive Breakpoints Swiper |
+| `extended-scrollbar.html` | Default Scroll Example; Design it as you want; Lightweight and performant; Supported everywhere; RTL Position; Scroll Size; Scroll Color |
+| `extended-toastify.html` | Basic Toastify JS Example; Display Position Example; Offset, Close Button & Duration Example |
+
+### Forms
+
+| Page | Source component coverage |
+| --- | --- |
+| `forms-basic.html` | Basic Example; Input Sizing; Disabled Input; Readonly Input; Datalists input; Select; Fields: Text, Email, Password, Placeholder, Text area, Datalist example, Default Input Select, Multiple Select, Multiple Select Size |
+| `forms-checkbox-radio.html` | Checkbox; Inline Checkbox; Disabled Checkbox; Colors Checkbox; Radio; Inline Radio; Disabled Radio; Colors Radio; Switch; Fields: Check this custom checkbox, Default Checkbox, Success Checkbox, Info Checkbox, Secondary Checkbox, Warning Checkbox, Danger Checkbox, Dark Checkbox, Default radio, Default checked radio, Default Radio, Success Radio, Info Radio, Secondary Radio |
+| `forms-choices.html` | Basic Example; Option Groups Example; Options added via config with no search; Options added via config with no sorting; Multiple select input; Multiple select With remove button input; Multiple select With Option groups; Text inputs; Text inputs in Unique values only, no pasting; Disabled Text Inputs; Fields: Option Groups, Option groups, Set limit values with remove button, Unique values only, no pasting, Disabled |
+| `forms-clipboard.html` | Copy text from another element; Cut text from another element; Copy text from attribute |
+| `forms-flatepicker.html` | Basic; DateTime; Human-friendly Dates; MinDate and MaxDate; Disabling dates; Selecting multiple dates; Selecting multiple dates - Conjunction; Range Calendar; Inline Calendar; Basic Timepicker; 24-hour Time Picker; Time Picker w/ Limits; Preloading Time |
+| `forms-validation.html` | Browser Default; Custom styles; Server side; Supported elements; Tooltips; Fields: First name, Last name, Username, City, State, Zip, Agree to terms and conditions, Textarea, Check this checkbox, Toggle this radio, Or toggle this other radio |
+| `forms-wizard.html` | Horizontal Wizard; Account Information; Profile Information; Social Media Links; Finished !; Vertical Wizard; Fields: User Name, Email, Password, Confirm Password, , First Name, Last Name, Number, Country, GitHub, Google, Instagram, Skype, I agree with the Terms and Conditions |
+| `forms-fileuploads.html` | Dropzone File Upload; Drop your images here, or click to browse |
+| `forms-editors.html` | Snow Editor; Bubble Editor |
+| `forms-input-mask.html` | Input Masks; Fields: Date, Hour, Date & Hour, ZIP Code, Crazy Zip Code, Money, Money 2, Telephone, Telephone with Code Area, US Telephone, São Paulo Celphones, CPF, CNPJ, IP Address |
+| `forms-range-slider.html` | Basic Range Slider; Vertical Range Slider; Multi Elements Range; Colorpicker; Value Range Slider; Locking Sliders Together; Tooltip; Soft Limits |
+
+### Tables
+
+| Page | Source component coverage |
+| --- | --- |
+| `tables-basic.html` | Basic Example; Variants; Striped Rows Table; Striped Rows Table Dark; Striped Rows Table Success; Striped columns; Striped columns Dark; Hoverable rows; Hoverable rows Dark; Active Tables; Active Tables Dark; Bordered Table; Bordered color Table; Tables without borders; Tables without borders Dark; Small tables; Small Tables Dark; Table group dividers; Vertical alignment; Nesting Table; Table head; Table head Dark; Table foot; Captions; Always responsive; With avatars; Tony M. Carter; James E. Chamb; Charlotte J. Torres; Mary J. Germain; Kevin C. Reyes; With checkboxes; Columns: #, First, Last, Handle, Class, Heading, Heading 1, Heading 2, Heading 3, Heading 4, Header, Name |
+| `tables-gridjs.html` | Basic; Pagination; Search; Sorting; Loading State; Fixed Header; Hidden Columns |
+
+### Charts
+
+| Page | Source component coverage |
+| --- | --- |
+| `charts-apex-area.html` | Basic Area Chart; Spline Area; Area Chart - Datetime X-axis; Area with Negative Values; Selection - Github Style; Stacked Area; Irregular TimeSeries; Area Chart with Null values |
+| `charts-apex-bar.html` | Overview; Basic Bar Chart; Grouped Bar Chart; Stacked Bar Chart; 100% Stacked Bar Chart; Bar with Negative Values; Reversed Bar Chart; Bar with Image Fill; Custom DataLabels Bar; Patterned Bar Chart; Bar with Markers |
+| `charts-apex-bubble.html` | Overview; Simple Bubble Chart; 3D Bubble Chart |
+| `charts-apex-candlestick.html` | Overview; Simple Candlestick Chart; Combo Candlestick Chart; Category X-Axis; Candlestick with Line |
+| `charts-apex-column.html` | Overview; Basic Column Chart; Column Chart with Datalabels; Stacked Column Chart; 100% Stacked Column Chart; Column with Markers; Column with Group Label; Column Chart with rotated labels & Annotations; Column Chart with negative values; Distributed Column Chart; Range Column Chart; Dynamic Loaded Chart |
+| `charts-apex-heatmap.html` | Overview; Basic Heatmap - Single Series; Heatmap - Multiple Series; Heatmap - Color Range; Heatmap - Range without Shades |
+| `charts-apex-line.html` | Overview; Simple line chart; Line with Data Labels; Zoomable Timeseries; Line Chart with Annotations; Syncing charts; Gradient Line Chart; Missing / Null values; Dashed Line Chart; Stepline Chart; Brush Chart; Realtime Chart |
+| `charts-apex-mixed.html` | Overview; Line & Column Chart; Multiple Y-Axis Chart; Line & Area Chart; Line, Column & Area Chart |
+| `charts-apex-timeline.html` | Overview; Basic Timeline; Distributed Timeline; Multi Series Timeline; Advanced Timeline; Multiple Series - Group Rows |
+| `charts-apex-boxplot.html` | Overview; Basic Boxplot; Scatter Boxplot |
+| `charts-apex-treemap.html` | Overview; Basic Treemap; Treemap Multiple Series; Distributed Treemap; Color Range Treemap |
+| `charts-apex-pie.html` | Overview; Simple Pie Chart; Simple Donut Chart; Monochrome Pie Chart; Gradient Donut Chart; Patterned Donut Chart; Pie Chart with Image fill; Donut Update |
+| `charts-apex-radar.html` | Overview; Basic Radar Chart; Radar with Polygon-fill; Radar – Multiple Series |
+| `charts-apex-radialbar.html` | Overview; Basic RadialBar Chart; Multiple RadialBars; Circle Chart - Custom Angle; Circle Chart with Image; Stroked Circular Gauge; Gradient Circular Chart; Semi Circle Gauge |
+| `charts-apex-scatter.html` | Overview; Scatter (XY) Chart; Scatter Chart - Datetime; Scatter - Images |
+| `charts-apex-polar-area.html` | Overview; Basic Polar Area Chart; Monochrome Polar Area |
+
+### Icons
+
+| Page | Source component coverage |
+| --- | --- |
+| `icons-boxicons.html` | Child; Balloon; Coffee Bean; Sushi; Shower; Typescript; Graphql; Rfid; Universal; Castle; Shield Minus; Shield Plus; ObjectsVertical; Vertical Top; Color; HorizontalLeft; ReflectVertical; Postgresql; Mongodb; Deezer; Xing; Cart Add; CartDownload; No Signal; Signal 5; Cheese; Hard Hat; Home Alt 2; Meta; Lemon; Cable Car; Cricket Ball; Tree Alt; Male Female; Invader |
+| `icons-solar.html` | Solar Icons |
+
+### Maps
+
+| Page | Source component coverage |
+| --- | --- |
+| `maps-google.html` | Usage; Basic Example; Markers Google Map; Street View Panoramas Google Map; Google Map Types; Ultra Light With Labels; Dark |
+| `maps-vector.html` | World Vector Map; Canada Vector Map; Russia Vector Map; Iraq Vector Map; Spain Vector Map |
+
+## 22. Feature initializer map
+
+Dependencies shown below were referenced by collected pages. Use the target framework adapters instead of copying global initialization patterns. Shared config/vendor/app scripts are omitted from each row.
+
+| Page / family | Feature initializer or integration |
+| --- | --- |
+| `apps-chat.html` | `assets/js/pages/app-chat.js` |
+| `index.html` | `assets/vendor/jsvectormap/js/jsvectormap.min.js`, `assets/vendor/jsvectormap/maps/world-merc.js`, `assets/vendor/jsvectormap/maps/world.js`, `assets/js/pages/dashboard.js` |
+| `product-grid.html` | `assets/js/pages/product-grid.js` |
+| `product-details.html` | `assets/js/pages/product-details.js` |
+| `order-cart.html` | `assets/js/pages/order-cart.js` |
+| `invoice-add.html` | `assets/js/pages/invoice-add.js` |
+| `customer-detail.html` | `assets/js/pages/customer-details.js` |
+| `seller-details.html` | `assets/js/pages/seller-detail.js` |
+| `seller-edit.html` | `assets/js/pages/seller-add.js` |
+| `seller-add.html` | `assets/js/pages/seller-add.js` |
+| `coupons-add.html` | `assets/js/pages/coupons-add.js` |
+| `apps-email.html` | `assets/js/pages/app-email.js` |
+| `apps-calendar.html` | `assets/vendor/fullcalendar/main.min.js`, `assets/js/pages/app-calendar.js` |
+| `pages-comingsoon.html` | `assets/js/pages/coming-soon.js` |
+| `widgets.html` | `assets/js/pages/widgets.js` |
+| `extended-ratings.html` | `assets/js/components/extended-rating.js` |
+| `extended-sweetalert.html` | `assets/js/components/extended-sweetalert.js` |
+| `charts-apex-area.html` | `https://apexcharts.com/samples/assets/stock-prices.js`, `https://apexcharts.com/samples/assets/series1000.js`, `https://apexcharts.com/samples/assets/github-data.js`, `https://apexcharts.com/samples/assets/irregular-data-series.js`, `assets/js/components/apexchart-area.js` |
+| `charts-apex-bar.html` | `assets/js/components/apexchart-bar.js` |
+| `charts-apex-bubble.html` | `assets/js/components/apexchart-bubble.js` |
+| `charts-apex-candlestick.html` | `https://apexcharts.com/samples/assets/ohlc.js`, `https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.17/dayjs.min.js`, `assets/js/components/apexchart-candlestick.js` |
+| `charts-apex-column.html` | `https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.0/dayjs.min.js`, `https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.0/plugin/quarterOfYear.min.js`, `assets/js/components/apexchart-column.js` |
+| `charts-apex-heatmap.html` | `assets/js/components/apexchart-heatmap.js` |
+| `charts-apex-line.html` | `https://apexcharts.com/samples/assets/stock-prices.js`, `https://apexcharts.com/samples/assets/irregular-data-series.js`, `assets/js/components/apexchart-line.js` |
+| `charts-apex-mixed.html` | `assets/js/components/apexchart-mixed.js` |
+| `charts-apex-timeline.html` | `assets/js/components/apexchart-timeline.js` |
+| `charts-apex-boxplot.html` | `assets/js/components/apexchart-boxplot.js` |
+| `charts-apex-treemap.html` | `assets/js/components/apexchart-treemap.js` |
+| `charts-apex-pie.html` | `assets/js/components/apexchart-pie.js` |
+| `charts-apex-radar.html` | `assets/js/components/apexchart-radar.js` |
+| `charts-apex-radialbar.html` | `assets/js/components/apexchart-radialbar.js` |
+| `charts-apex-scatter.html` | `assets/js/components/apexchart-scatter.js` |
+| `charts-apex-polar-area.html` | `assets/js/components/apexchart-polar-area.js` |
+| `forms-clipboard.html` | `assets/js/components/form-clipboard.js` |
+| `forms-flatepicker.html` | `assets/js/components/form-flatepicker.js` |
+| `forms-wizard.html` | `../assets/js/components/form-wizard.js` |
+| `forms-editors.html` | `assets/js/components/form-quilljs.js` |
+| `forms-range-slider.html` | `assets/js/components/form-slider.js` |
+| `tables-gridjs.html` | `assets/vendor/gridjs/gridjs.umd.js`, `assets/js/components/table-gridjs.js` |
+| `maps-google.html` | `http://maps.google.com/maps/api/js`, `assets/vendor/gmaps/gmaps.min.js`, `assets/js/components/maps-google.js` |
+| `maps-vector.html` | `assets/vendor/jsvectormap/js/jsvectormap.min.js`, `assets/vendor/jsvectormap/maps/world-merc.js`, `assets/vendor/jsvectormap/maps/world.js`, `assets/js/components/maps-canada.js`, `assets/js/components/maps-iraq.js`, `assets/js/components/maps-russia.js`, `assets/js/components/maps-spain.js`, `assets/js/components/maps-us-aea-en.js`, `assets/js/components/maps-us-lcc-en.js`, `assets/js/components/maps-us-mill-en.js`, `assets/js/components/maps-vector.js` |
+
+## 23. Source-defined function inventory
+
+| Shared controller | Responsibilities and target adaptation |
+| --- | --- |
+| Components | Initialize Bootstrap popovers/tooltips/offcanvas/toasts; fullscreen toggle; nonempty search dropdown; counter animation. Initialize only mounted components and clean up on unmount. |
+| FormValidation | Listen to submit, checkValidity, prevent invalid submission and add was-validated. Keep server validation. |
+| FormAdvanced | Inputmask and Choices configuration from data attributes: search, grouping, removal, limits, sorting, duplicate prevention and disabled state. |
+| Portlet | Remove a presentation card or display temporary reload overlay. Real refresh follows a query lifecycle, not a randomized timer. |
+| Code | ClipboardJS copy with temporary Copied caption; Prism normalization; Gumshoe active docs navigation. These are demo documentation features, not business requirements. |
+| Dragula | Drag between declared container IDs with an optional handle class. Target reordering must persist through its own API when required. |
+| SwiperSlider | Default/navigation/pagination/scrollbar/vertical/mousewheel/effect/responsive showcase variants, mostly loop and 2500ms autoplay. |
+| ToastNotification | Toastify options from data attributes: text, gravity, position, semantic class, duration, close and offset; stop on focus. |
+| ThemeLayout | URL-aware menu activation, peer collapse management, active-item scrolling, theme/topbar/menu controls, menu size toggle, backdrop, reset, resize and session preferences. |
+
+### Demo-only behavior to replace
+
+Product list pagination links and many CRUD actions are static placeholders. Search dropdown visibility is not a search service. A card refresh timer is not an analytics query. Calendar/chat/cart/invoice page initializers are client examples, not evidence of durable storage or permissions. Form validation styling is not server validation. Role checkboxes are not authorization. Use real target contracts for each.
+
+## 24. Exact CSS reference lookup
+
+The following selected rules preserve source media/state context and exact declarations for shell, tokens and key component/plugin families. Vendor-prefixed duplicate declarations and comments were reduced. This is supporting evidence, **not a complete Bootstrap distribution**, not a drop-in global stylesheet and not a claim that every selector rendered in the audit. Some variables describe unused variants. Port relevant values into scoped target components, apply the full cascade, and resolve utility overrides. The readable sections above define the migration behavior.
+
+```css
+html[data-bs-theme=dark], [data-bs-theme=dark] {
+--bs-border-color: #2f3944;
+--bs-light: #2f3943;
+--bs-dark: #f1f1f1;
+--bs-light-rgb: 47, 57, 67;
+--bs-dark-rgb: 241, 241, 241;
+--bs-headings-color: #aab8c5;
+--bs-input-border-color: #3a4551;
+--bs-input-focus-border-color: #4a5663;
+}
+html[data-menu-color=light] {
+--bs-main-nav-bg: #f8f5f1;
+--bs-main-nav-item-color: #797b97;
+--bs-main-nav-item-hover-bg: transparent;
+--bs-main-nav-item-hover-color: #ff6c2f;
+--bs-main-nav-border-color: #eaedf1;
+}
+html[data-menu-color=dark],
+html[data-bs-theme=dark][data-menu-color=light] {
+--bs-main-nav-bg: #262d34;
+--bs-main-nav-item-color: #9097a7;
+--bs-main-nav-item-hover-bg: transparent;
+--bs-main-nav-item-hover-color: #ffffff;
+--bs-main-nav-border-color: #2f3944;
+}
+html[data-topbar-color=light] {
+--bs-topbar-bg: #f9f7f7;
+--bs-topbar-item-color: #707793;
+--bs-topbar-search-bg: #eae8e8;
+}
+html[data-topbar-color=dark],
+html[data-bs-theme=dark][data-topbar-color=light] {
+--bs-topbar-bg: #22282e;
+--bs-topbar-item-color: #dee2e6;
+--bs-topbar-search-bg: #2c3238;
+}
+:root,
+[data-bs-theme=light] {
+--bs-white: #ffffff;
+--bs-black: #000000;
+--bs-gray: #5d7186;
+--bs-gray-dark: #36404a;
+--bs-gray-100: #f8f9fa;
+--bs-gray-200: #eef2f7;
+--bs-gray-300: #d8dfe7;
+--bs-gray-400: #b0b0bb;
+--bs-gray-500: #8486a7;
+--bs-gray-600: #5d7186;
+--bs-gray-700: #424e5a;
+--bs-gray-800: #36404a;
+--bs-gray-900: #323a46;
+--bs-primary: #ff6c2f;
+--bs-secondary: #5d7186;
+--bs-success: #22c55e;
+--bs-warning: #f9b931;
+--bs-info: #4ecac2;
+--bs-danger: #ef5f5f;
+--bs-purple: #7f56da;
+--bs-pink: #ff86c8;
+--bs-blue: #1c84ee;
+--bs-orange: #ff6c2f;
+--bs-indigo: #53389f;
+--bs-red: #ef5f5f;
+--bs-yellow: #f9b931;
+--bs-green: #22c55e;
+--bs-teal: #040505;
+--bs-cyan: #4ecac2;
+--bs-light: #eef2f7;
+--bs-dark: #323a46;
+--bs-primary-rgb: 255, 108, 47;
+--bs-secondary-rgb: 93, 113, 134;
+--bs-success-rgb: 34, 197, 94;
+--bs-warning-rgb: 249, 185, 49;
+--bs-info-rgb: 78, 202, 194;
+--bs-danger-rgb: 239, 95, 95;
+--bs-purple-rgb: 127, 86, 218;
+--bs-pink-rgb: 255, 134, 200;
+--bs-blue-rgb: 28, 132, 238;
+--bs-orange-rgb: 255, 108, 47;
+--bs-indigo-rgb: 83, 56, 159;
+--bs-red-rgb: 239, 95, 95;
+--bs-yellow-rgb: 249, 185, 49;
+--bs-green-rgb: 34, 197, 94;
+--bs-teal-rgb: 4, 5, 5;
+--bs-cyan-rgb: 78, 202, 194;
+--bs-light-rgb: 238, 242, 247;
+--bs-dark-rgb: 50, 58, 70;
+--bs-primary-text-emphasis: #662b13;
+--bs-secondary-text-emphasis: #252d36;
+--bs-success-text-emphasis: #0e4f26;
+--bs-info-text-emphasis: #1f514e;
+--bs-warning-text-emphasis: #644a14;
+--bs-danger-text-emphasis: #602626;
+--bs-light-text-emphasis: #424e5a;
+--bs-dark-text-emphasis: #424e5a;
+--bs-primary-bg-subtle: #ffe2d5;
+--bs-secondary-bg-subtle: #dfe3e7;
+--bs-success-bg-subtle: #d3f3df;
+--bs-info-bg-subtle: #dcf4f3;
+--bs-warning-bg-subtle: #fef1d6;
+--bs-danger-bg-subtle: #fcdfdf;
+--bs-light-bg-subtle: #fcfcfd;
+--bs-dark-bg-subtle: #b0b0bb;
+--bs-primary-border-subtle: #ffc4ac;
+--bs-secondary-border-subtle: #bec6cf;
+--bs-success-border-subtle: #a7e8bf;
+--bs-info-border-subtle: #b8eae7;
+--bs-warning-border-subtle: #fde3ad;
+--bs-danger-border-subtle: #f9bfbf;
+--bs-light-border-subtle: #eef2f7;
+--bs-dark-border-subtle: #8486a7;
+--bs-white-rgb: 255, 255, 255;
+--bs-black-rgb: 0, 0, 0;
+--bs-font-sans-serif: "Play", sans-serif;
+--bs-font-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+--bs-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0));
+--bs-body-font-family: var(--bs-font-sans-serif);
+--bs-body-font-size: 0.875rem;
+--bs-body-font-weight: 400;
+--bs-body-line-height: 1.5;
+--bs-body-color: #5d7186;
+--bs-body-color-rgb: 93, 113, 134;
+--bs-body-bg: #f9f7f7;
+--bs-body-bg-rgb: 249, 247, 247;
+--bs-emphasis-color: rgba(93, 113, 134, 0.75);
+--bs-emphasis-color-rgb: 93, 113, 134;
+--bs-secondary-color: #5d7186;
+--bs-secondary-color-rgb: 93, 113, 134;
+--bs-secondary-bg: #ffffff;
+--bs-secondary-bg-rgb: 255, 255, 255;
+--bs-tertiary-color: #424e5a;
+--bs-tertiary-color-rgb: 66, 78, 90;
+--bs-tertiary-bg: #f8f9fa;
+--bs-tertiary-bg-rgb: 248, 249, 250;
+--bs-heading-color: var(--bs-headings-color);
+--bs-link-color: #8486a7;
+--bs-link-color-rgb: 132, 134, 167;
+--bs-link-decoration: none;
+--bs-link-hover-color: #d95c28;
+--bs-link-hover-color-rgb: 217, 92, 40;
+--bs-link-hover-decoration: none;
+--bs-code-color: #ff86c8;
+--bs-highlight-color: #5d7186;
+--bs-highlight-bg: #fef1d6;
+--bs-border-width: 1px;
+--bs-border-style: solid;
+--bs-border-color: #eaedf1;
+--bs-border-color-translucent: rgba(0, 0, 0, 0.175);
+--bs-border-radius: 0.75rem;
+--bs-border-radius-sm: 0.5rem;
+--bs-border-radius-lg: 1rem;
+--bs-border-radius-xl: 1.25rem;
+--bs-border-radius-xxl: 2rem;
+--bs-border-radius-2xl: var(--bs-border-radius-xxl);
+--bs-border-radius-pill: 50rem;
+--bs-box-shadow: 0px 3px 4px 0px rgba(0, 0, 0, 0.03);
+--bs-box-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+--bs-box-shadow-lg: 0 5px 10px rgba(30, 32, 37, 0.12);
+--bs-box-shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.075);
+--bs-focus-ring-width: 0.15rem;
+--bs-focus-ring-opacity: 0.25;
+--bs-focus-ring-color: rgba(255, 108, 47, 0.25);
+--bs-form-valid-color: #22c55e;
+--bs-form-valid-border-color: #22c55e;
+--bs-form-invalid-color: #ef5f5f;
+--bs-form-invalid-border-color: #ef5f5f;
+}
+[data-bs-theme=dark] {
+color-scheme: dark;
+--bs-body-color: #aab8c5;
+--bs-body-color-rgb: 170, 184, 197;
+--bs-body-bg: #22282e;
+--bs-body-bg-rgb: 34, 40, 46;
+--bs-emphasis-color: #dee2e6;
+--bs-emphasis-color-rgb: 222, 226, 230;
+--bs-secondary-color: #8391a2;
+--bs-secondary-color-rgb: 131, 145, 162;
+--bs-secondary-bg: #282f36;
+--bs-secondary-bg-rgb: 40, 47, 54;
+--bs-tertiary-color: #f1f1f1;
+--bs-tertiary-color-rgb: 241, 241, 241;
+--bs-tertiary-bg: #2f3943;
+--bs-tertiary-bg-rgb: 47, 57, 67;
+--bs-primary-text-emphasis: #ffa782;
+--bs-secondary-text-emphasis: #9eaab6;
+--bs-success-text-emphasis: #7adc9e;
+--bs-info-text-emphasis: #95dfda;
+--bs-warning-text-emphasis: #fbd583;
+--bs-danger-text-emphasis: #f59f9f;
+--bs-light-text-emphasis: #f8f9fa;
+--bs-dark-text-emphasis: #d8dfe7;
+--bs-primary-bg-subtle: rgba(255, 108, 47, 0.15);
+--bs-secondary-bg-subtle: rgba(66, 78, 90, 0.15);
+--bs-success-bg-subtle: rgba(34, 197, 94, 0.15);
+--bs-info-bg-subtle: rgba(78, 202, 194, 0.15);
+--bs-warning-bg-subtle: rgba(249, 185, 49, 0.15);
+--bs-danger-bg-subtle: rgba(239, 95, 95, 0.15);
+--bs-light-bg-subtle: rgba(var(--bs-light-rgb), 0.15);
+--bs-dark-bg-subtle: rgba(var(--bs-dark-rgb), 0.15);
+--bs-primary-border-subtle: #99411c;
+--bs-secondary-border-subtle: #424e5a;
+--bs-success-border-subtle: #147638;
+--bs-info-border-subtle: #2f7974;
+--bs-warning-border-subtle: #956f1d;
+--bs-danger-border-subtle: #8f3939;
+--bs-light-border-subtle: #424e5a;
+--bs-dark-border-subtle: #8486a7;
+--bs-heading-color: #aab8c5;
+--bs-link-color: #ffa782;
+--bs-link-hover-color: #ffb495;
+--bs-link-color-rgb: 255, 167, 130;
+--bs-link-hover-color-rgb: 255, 180, 149;
+--bs-code-color: #ffb6de;
+--bs-highlight-color: #aab8c5;
+--bs-highlight-bg: #644a14;
+--bs-border-color: #2f3944;
+--bs-border-color-translucent: #8391a2;
+--bs-form-valid-color: #7adc9e;
+--bs-form-valid-border-color: #7adc9e;
+--bs-form-invalid-color: #f59f9f;
+--bs-form-invalid-border-color: #f59f9f;
+}
+@media (prefers-reduced-motion: no-preference) {
+:root {
+scroll-behavior: smooth;
+}
+}
+.container,
+.container-fluid,
+.container-xxl,
+.container-xl,
+.container-lg,
+.container-md,
+.container-sm {
+--bs-gutter-x: 1.5rem;
+--bs-gutter-y: 0;
+width: 100%;
+padding-right: calc(var(--bs-gutter-x) * 0.5);
+padding-left: calc(var(--bs-gutter-x) * 0.5);
+margin-right: auto;
+margin-left: auto;
+}
+:root {
+--bs-breakpoint-xs: 0;
+--bs-breakpoint-sm: 576px;
+--bs-breakpoint-md: 768px;
+--bs-breakpoint-lg: 992px;
+--bs-breakpoint-xl: 1200px;
+--bs-breakpoint-xxl: 1400px;
+}
+.table {
+--bs-table-color-type: initial;
+--bs-table-bg-type: initial;
+--bs-table-color-state: initial;
+--bs-table-bg-state: initial;
+--bs-table-color: var(--bs-body-color);
+--bs-table-bg: transparent;
+--bs-table-border-color: var(--bs-border-color);
+--bs-table-accent-bg: transparent;
+--bs-table-striped-color: var(--bs-body-color);
+--bs-table-striped-bg: rgba(var(--bs-black-rgb), 0.02);
+--bs-table-active-color: var(--bs-body-color);
+--bs-table-active-bg: rgba(var(--bs-black-rgb), 0.02);
+--bs-table-hover-color: var(--bs-body-color);
+--bs-table-hover-bg: rgba(var(--bs-black-rgb), 0.02);
+width: 100%;
+margin-bottom: 1.5rem;
+vertical-align: top;
+border-color: var(--bs-table-border-color);
+}
+.table > :not(caption) > * > * {
+padding: 0.85rem 0.85rem;
+color: var(--bs-table-color-state, var(--bs-table-color-type, var(--bs-table-color)));
+background-color: var(--bs-table-bg);
+border-bottom-width: var(--bs-border-width);
+box-shadow: inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
+}
+.table-sm > :not(caption) > * > * {
+padding: 0.5rem 0.5rem;
+}
+.table-responsive {
+overflow-x: auto;
+}
+@media (max-width: 575.98px) {
+.table-responsive-sm {
+overflow-x: auto;
+}
+}
+@media (max-width: 767.98px) {
+.table-responsive-md {
+overflow-x: auto;
+}
+}
+@media (max-width: 991.98px) {
+.table-responsive-lg {
+overflow-x: auto;
+}
+}
+@media (max-width: 1199.98px) {
+.table-responsive-xl {
+overflow-x: auto;
+}
+}
+@media (max-width: 1399.98px) {
+.table-responsive-xxl {
+overflow-x: auto;
+}
+}
+.form-label {
+margin-bottom: 0.4rem;
+font-size: 0.875rem;
+font-weight: 500;
+color: var(--bs-body-color);
+}
+.form-control {
+display: block;
+width: 100%;
+padding: 0.5rem 1rem;
+font-size: 0.875rem;
+font-weight: 400;
+line-height: 1.5;
+color: var(--bs-body-color);
+-moz-appearance: none;
+appearance: none;
+background-color: var(--bs-secondary-bg);
+background-clip: padding-box;
+border: var(--bs-border-width) solid var(--bs-input-border-color);
+border-radius: var(--bs-border-radius-sm);
+transition: border-color 0.15s ease-in-out,
+transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out,
+}
+@media (prefers-reduced-motion: reduce) {
+.form-control {
+transition: none;
+}
+}
+.form-control:focus {
+color: var(--bs-body-color);
+background-color: var(--bs-secondary-bg);
+border-color: var(--bs-input-focus-border-color);
+outline: 0;
+box-shadow: none;
+}
+.form-select {
+--bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2336404a' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+display: block;
+width: 100%;
+padding: 0.5rem 3rem 0.5rem 1rem;
+font-size: 0.875rem;
+font-weight: 400;
+line-height: 1.5;
+color: var(--bs-body-color);
+-moz-appearance: none;
+appearance: none;
+background-color: var(--bs-secondary-bg);
+background-image: var(--bs-form-select-bg-img), var(--bs-form-select-bg-icon, none);
+background-repeat: no-repeat;
+background-position: right 1rem center;
+background-size: 14px 10px;
+border: var(--bs-border-width) solid var(--bs-input-border-color);
+border-radius: var(--bs-border-radius-sm);
+transition: border-color 0.15s ease-in-out,
+transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out,
+}
+@media (prefers-reduced-motion: reduce) {
+.form-select {
+transition: none;
+}
+}
+[data-bs-theme=dark] .form-select {
+--bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23aab8c5' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+.form-check-input {
+--bs-form-check-bg: var(--bs-secondary-bg);
+flex-shrink: 0;
+width: 1.112em;
+height: 1.112em;
+margin-top: 0.194em;
+vertical-align: top;
+-moz-appearance: none;
+appearance: none;
+background-color: var(--bs-form-check-bg);
+background-image: var(--bs-form-check-bg-image);
+background-repeat: no-repeat;
+background-position: center;
+background-size: contain;
+border: var(--bs-border-width) solid var(--bs-border-color-translucent);
+print-color-adjust: exact;
+}
+.form-switch .form-check-input {
+--bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%239da9bb'/%3e%3c/svg%3e");
+width: 2em;
+margin-left: -2.5em;
+background-image: var(--bs-form-switch-bg);
+background-position: left center;
+border-radius: 2em;
+transition: background-position 0.15s ease-in-out;
+}
+@media (prefers-reduced-motion: reduce) {
+.form-switch .form-check-input {
+transition: none;
+}
+}
+[data-bs-theme=dark] .form-switch .form-check-input:not(:checked):not(:focus) {
+--bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%28255, 255, 255, 0.25%29'/%3e%3c/svg%3e");
+}
+.btn {
+--bs-btn-padding-x: 1rem;
+--bs-btn-padding-y: 0.5rem;
+--bs-btn-font-family: ;
+--bs-btn-font-size: 0.875rem;
+--bs-btn-font-weight: 400;
+--bs-btn-line-height: 1.5;
+--bs-btn-color: var(--bs-body-color);
+--bs-btn-bg: transparent;
+--bs-btn-border-width: var(--bs-border-width);
+--bs-btn-border-color: transparent;
+--bs-btn-border-radius: 0.75rem;
+--bs-btn-hover-border-color: transparent;
+--bs-btn-box-shadow: 0px 2px 6px 0px;
+--bs-btn-disabled-opacity: 0.65;
+--bs-btn-focus-box-shadow: 0 0 0 0.15rem rgba(var(--bs-btn-focus-shadow-rgb), .5);
+display: inline-block;
+padding: var(--bs-btn-padding-y) var(--bs-btn-padding-x);
+font-family: var(--bs-btn-font-family);
+font-size: var(--bs-btn-font-size);
+font-weight: var(--bs-btn-font-weight);
+line-height: var(--bs-btn-line-height);
+color: var(--bs-btn-color);
+text-align: center;
+vertical-align: middle;
+cursor: pointer;
+-moz-user-select: none;
+user-select: none;
+border: var(--bs-btn-border-width) solid var(--bs-btn-border-color);
+border-radius: var(--bs-btn-border-radius);
+background-color: var(--bs-btn-bg);
+transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out,
+transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out,
+}
+@media (prefers-reduced-motion: reduce) {
+.btn {
+transition: none;
+}
+}
+.btn-primary {
+--bs-btn-color: #ffffff;
+--bs-btn-bg: #ff6c2f;
+--bs-btn-border-color: #ff6c2f;
+--bs-btn-hover-color: #ffffff;
+--bs-btn-hover-bg: #e6612a;
+--bs-btn-hover-border-color: #e6612a;
+--bs-btn-focus-shadow-rgb: 255, 130, 78;
+--bs-btn-active-color: #ffffff;
+--bs-btn-active-bg: #cc5626;
+--bs-btn-active-border-color: #bf5123;
+--bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+--bs-btn-disabled-color: #ffffff;
+--bs-btn-disabled-bg: #ff6c2f;
+--bs-btn-disabled-border-color: #ff6c2f;
+}
+.btn-outline-primary {
+--bs-btn-color: #ff6c2f;
+--bs-btn-border-color: #ff6c2f;
+--bs-btn-hover-color: #ffffff;
+--bs-btn-hover-bg: #ff6c2f;
+--bs-btn-hover-border-color: #ff6c2f;
+--bs-btn-focus-shadow-rgb: 255, 108, 47;
+--bs-btn-active-color: #ffffff;
+--bs-btn-active-bg: #ff6c2f;
+--bs-btn-active-border-color: #ff6c2f;
+--bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+--bs-btn-disabled-color: #ff6c2f;
+--bs-btn-disabled-bg: transparent;
+--bs-btn-disabled-border-color: #ff6c2f;
+--bs-gradient: none;
+}
+.btn-lg, .btn-group-lg > .btn {
+--bs-btn-padding-y: 0.625rem;
+--bs-btn-padding-x: 1.5rem;
+--bs-btn-font-size: 1rem;
+--bs-btn-border-radius: 1rem;
+}
+.btn-sm, .btn-group-sm > .btn {
+--bs-btn-padding-y: 0.348rem;
+--bs-btn-padding-x: 0.75rem;
+--bs-btn-font-size: 0.7875rem;
+--bs-btn-border-radius: 0.5rem;
+}
+.fade {
+transition: opacity 0.15s linear;
+}
+@media (prefers-reduced-motion: reduce) {
+.fade {
+transition: none;
+}
+}
+.collapsing {
+height: 0;
+overflow: hidden;
+transition: height 0.35s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+.collapsing {
+transition: none;
+}
+}
+.dropdown-menu {
+--bs-dropdown-zindex: 1000;
+--bs-dropdown-min-width: 10rem;
+--bs-dropdown-padding-x: 0;
+--bs-dropdown-padding-y: 0.25rem;
+--bs-dropdown-spacer: 0.125rem;
+--bs-dropdown-font-size: 0.875rem;
+--bs-dropdown-color: var(--bs-body-color);
+--bs-dropdown-bg: var(--bs-secondary-bg);
+--bs-dropdown-border-color: var(--bs-border-color);
+--bs-dropdown-border-radius: 0.5rem;
+--bs-dropdown-border-width: var(--bs-border-width);
+--bs-dropdown-inner-border-radius: calc(0.5rem - var(--bs-border-width));
+--bs-dropdown-divider-bg: var(--bs-border-color);
+--bs-dropdown-divider-margin-y: 0.75rem;
+--bs-dropdown-box-shadow: var(--bs-box-shadow);
+--bs-dropdown-link-color: var(--bs-body-color);
+--bs-dropdown-link-hover-color: var(--bs-body-color);
+--bs-dropdown-link-hover-bg: var(--bs-tertiary-bg);
+--bs-dropdown-link-active-color: var(--bs-body-color);
+--bs-dropdown-link-active-bg: var(--bs-tertiary-bg);
+--bs-dropdown-link-disabled-color: var(--bs-emphasis-color);
+--bs-dropdown-item-padding-x: 1.5rem;
+--bs-dropdown-item-padding-y: 0.375rem;
+--bs-dropdown-header-color: inherit;
+--bs-dropdown-header-padding-x: 1.125rem;
+--bs-dropdown-header-padding-y: 0.5rem;
+position: absolute;
+z-index: var(--bs-dropdown-zindex);
+display: none;
+min-width: var(--bs-dropdown-min-width);
+padding: var(--bs-dropdown-padding-y) var(--bs-dropdown-padding-x);
+margin: 0;
+font-size: var(--bs-dropdown-font-size);
+color: var(--bs-dropdown-color);
+text-align: left;
+list-style: none;
+background-color: var(--bs-dropdown-bg);
+background-clip: padding-box;
+border: var(--bs-dropdown-border-width) solid var(--bs-dropdown-border-color);
+border-radius: var(--bs-dropdown-border-radius);
+}
+.dropdown-item {
+display: block;
+width: 100%;
+padding: var(--bs-dropdown-item-padding-y) var(--bs-dropdown-item-padding-x);
+clear: both;
+font-weight: 400;
+color: var(--bs-dropdown-link-color);
+text-align: inherit;
+white-space: nowrap;
+background-color: transparent;
+border: 0;
+border-radius: var(--bs-dropdown-item-border-radius, 0);
+}
+.navbar > .container,
+.navbar > .container-fluid,
+.navbar > .container-sm,
+.navbar > .container-md,
+.navbar > .container-lg,
+.navbar > .container-xl,
+.navbar > .container-xxl {
+display:
+display:
+display: flex;
+flex-wrap: inherit;
+align-items: center;
+justify-content: space-between;
+}
+[data-bs-theme=dark] .navbar-toggler-icon {
+--bs-navbar-toggler-icon-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.55%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+.card {
+--bs-card-spacer-y: 1.5rem;
+--bs-card-spacer-x: 1.5rem;
+--bs-card-title-spacer-y: 0.75rem;
+--bs-card-title-color: var(--bs-headings-color);
+--bs-card-subtitle-color: ;
+--bs-card-border-width: 0;
+--bs-card-border-color: var(--bs-border-color);
+--bs-card-border-radius: var(--bs-border-radius);
+--bs-card-box-shadow: var(--bs-box-shadow);
+--bs-card-inner-border-radius: calc(var(--bs-border-radius) - 0);
+--bs-card-cap-padding-y: 1.125rem;
+--bs-card-cap-padding-x: 1.5rem;
+--bs-card-cap-bg: transparent;
+--bs-card-cap-color: ;
+--bs-card-height: ;
+--bs-card-color: ;
+--bs-card-bg: var(--bs-secondary-bg);
+--bs-card-img-overlay-padding: 1.5rem;
+--bs-card-group-margin: 0.75rem;
+position: relative;
+display:
+display:
+display: flex;
+flex-direction: column;
+min-width: 0;
+height: var(--bs-card-height);
+color: var(--bs-body-color);
+word-wrap: break-word;
+background-color: var(--bs-card-bg);
+background-clip: border-box;
+border: var(--bs-card-border-width) solid var(--bs-card-border-color);
+border-radius: var(--bs-card-border-radius);
+}
+.card-body {
+flex: 1 1 auto;
+padding: var(--bs-card-spacer-y) var(--bs-card-spacer-x);
+color: var(--bs-card-color);
+}
+.card-title {
+margin-bottom: var(--bs-card-title-spacer-y);
+color: var(--bs-card-title-color);
+}
+.card-header {
+padding: var(--bs-card-cap-padding-y) var(--bs-card-cap-padding-x);
+margin-bottom: 0;
+color: var(--bs-card-cap-color);
+background-color: var(--bs-card-cap-bg);
+border-bottom: var(--bs-card-border-width) solid var(--bs-card-border-color);
+}
+.card-footer {
+padding: var(--bs-card-cap-padding-y) var(--bs-card-cap-padding-x);
+color: var(--bs-card-cap-color);
+background-color: var(--bs-card-cap-bg);
+border-top: var(--bs-card-border-width) solid var(--bs-card-border-color);
+}
+.accordion {
+--bs-accordion-color: var(--bs-body-color);
+--bs-accordion-bg: var(--bs-secondary-bg);
+--bs-accordion-transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out, border-radius 0.15s ease;
+--bs-accordion-border-color: var(--bs-border-color);
+--bs-accordion-border-width: var(--bs-border-width);
+--bs-accordion-border-radius: var(--bs-border-radius);
+--bs-accordion-inner-border-radius: calc(var(--bs-border-radius) - (var(--bs-border-width)));
+--bs-accordion-btn-padding-x: 1.25rem;
+--bs-accordion-btn-padding-y: 1rem;
+--bs-accordion-btn-color: var(--bs-body-color);
+--bs-accordion-btn-bg: var(--bs-accordion-bg);
+--bs-accordion-btn-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='var%28--bs-body-color%29'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+--bs-accordion-btn-icon-width: 1rem;
+--bs-accordion-btn-icon-transform: rotate(-180deg);
+--bs-accordion-btn-icon-transition: transform 0.2s ease-in-out;
+--bs-accordion-btn-active-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='var%28--bs-primary%29'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+--bs-accordion-btn-focus-box-shadow: none;
+--bs-accordion-body-padding-x: 1.25rem;
+--bs-accordion-body-padding-y: 1rem;
+--bs-accordion-active-color: var(--bs-primary);
+--bs-accordion-active-bg: var(--bs-tertiary-bg);
+}
+.accordion-button {
+position: relative;
+display:
+display:
+display: flex;
+align-items: center;
+width: 100%;
+padding: var(--bs-accordion-btn-padding-y) var(--bs-accordion-btn-padding-x);
+font-size: 0.875rem;
+color: var(--bs-accordion-btn-color);
+text-align: left;
+background-color: var(--bs-accordion-btn-bg);
+border: 0;
+border-radius: 0;
+overflow-anchor: none;
+transition: var(--bs-accordion-transition);
+}
+@media (prefers-reduced-motion: reduce) {
+.accordion-button {
+transition: none;
+}
+}
+[data-bs-theme=dark] .accordion-button::after {
+--bs-accordion-btn-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23ffa782'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+--bs-accordion-btn-active-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23ffa782'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+}
+.pagination {
+--bs-pagination-padding-x: 0.75rem;
+--bs-pagination-padding-y: 0.375rem;
+--bs-pagination-font-size: 0.875rem;
+--bs-pagination-color: var(--bs-tertiary-color);
+--bs-pagination-bg: var(--bs-secondary-bg);
+--bs-pagination-border-width: var(--bs-border-width);
+--bs-pagination-border-color: var(--bs-border-color);
+--bs-pagination-border-radius: var(--bs-border-radius);
+--bs-pagination-hover-color: var(--bs-link-hover-color);
+--bs-pagination-hover-bg: var(--bs-tertiary-bg);
+--bs-pagination-hover-border-color: var(--bs-border-color);
+--bs-pagination-focus-color: var(--bs-link-hover-color);
+--bs-pagination-focus-bg: var(--bs-secondary-bg);
+--bs-pagination-focus-box-shadow: none;
+--bs-pagination-active-color: #ffffff;
+--bs-pagination-active-bg: #ff6c2f;
+--bs-pagination-active-border-color: #ff6c2f;
+--bs-pagination-disabled-color: var(--bs-secondary-color);
+--bs-pagination-disabled-bg: var(--bs-secondary-bg);
+--bs-pagination-disabled-border-color: var(--bs-border-color);
+display:
+display:
+display: flex;
+padding-left: 0;
+list-style: none;
+}
+.badge {
+--bs-badge-padding-x: 6px;
+--bs-badge-padding-y: 3px;
+--bs-badge-font-size: 0.75em;
+--bs-badge-font-weight: 600;
+--bs-badge-color: #ffffff;
+--bs-badge-border-radius: 4px;
+display: inline-block;
+padding: var(--bs-badge-padding-y) var(--bs-badge-padding-x);
+font-size: var(--bs-badge-font-size);
+font-weight: var(--bs-badge-font-weight);
+line-height: 1;
+color: var(--bs-badge-color);
+text-align: center;
+white-space: nowrap;
+vertical-align: baseline;
+border-radius: var(--bs-badge-border-radius);
+}
+.alert {
+--bs-alert-bg: transparent;
+--bs-alert-padding-x: 1.25rem;
+--bs-alert-padding-y: 0.75rem;
+--bs-alert-margin-bottom: 1.25rem;
+--bs-alert-color: inherit;
+--bs-alert-border-color: transparent;
+--bs-alert-border: 0 solid var(--bs-alert-border-color);
+--bs-alert-border-radius: 0.75rem;
+--bs-alert-link-color: inherit;
+position: relative;
+padding: var(--bs-alert-padding-y) var(--bs-alert-padding-x);
+margin-bottom: var(--bs-alert-margin-bottom);
+color: var(--bs-alert-color);
+background-color: var(--bs-alert-bg);
+border: var(--bs-alert-border);
+border-radius: var(--bs-alert-border-radius);
+}
+[data-bs-theme=dark] .btn-close {
+filter: var(--bs-btn-close-white-filter);
+}
+.toast {
+--bs-toast-zindex: 1090;
+--bs-toast-padding-x: 0.75rem;
+--bs-toast-padding-y: 0.75rem;
+--bs-toast-spacing: 1.5rem;
+--bs-toast-max-width: 350px;
+--bs-toast-font-size: 0.875rem;
+--bs-toast-color: ;
+--bs-toast-bg: var(--bs-secondary-bg);
+--bs-toast-border-width: var(--bs-border-width);
+--bs-toast-border-color: var(--bs-border-color);
+--bs-toast-border-radius: var(--bs-border-radius);
+--bs-toast-box-shadow: var(--bs-box-shadow);
+--bs-toast-header-color: var(--bs-secondary-color);
+--bs-toast-header-bg: rgba(var(--bs-body-bg-rgb), 0.85);
+--bs-toast-header-border-color: var(--bs-border-color);
+width: var(--bs-toast-max-width);
+max-width: 100%;
+font-size: var(--bs-toast-font-size);
+color: var(--bs-toast-color);
+pointer-events: auto;
+background-color: var(--bs-toast-bg);
+background-clip: padding-box;
+border: var(--bs-toast-border-width) solid var(--bs-toast-border-color);
+box-shadow: var(--bs-toast-box-shadow);
+border-radius: var(--bs-toast-border-radius);
+}
+.modal {
+--bs-modal-zindex: 1055;
+--bs-modal-width: 500px;
+--bs-modal-padding: 1.5rem;
+--bs-modal-margin: 0.5rem;
+--bs-modal-color: ;
+--bs-modal-bg: var(--bs-secondary-bg);
+--bs-modal-border-color: transparent;
+--bs-modal-border-width: var(--bs-border-width);
+--bs-modal-border-radius: var(--bs-border-radius-lg);
+--bs-modal-box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+--bs-modal-inner-border-radius: calc(var(--bs-border-radius-lg) - (var(--bs-border-width)));
+--bs-modal-header-padding-x: 1.5rem;
+--bs-modal-header-padding-y: 1.5rem;
+--bs-modal-header-padding: 1.5rem 1.5rem;
+--bs-modal-header-border-color: var(--bs-border-color);
+--bs-modal-header-border-width: var(--bs-border-width);
+--bs-modal-title-line-height: 1.5;
+--bs-modal-footer-gap: 0.5rem;
+--bs-modal-footer-bg: ;
+--bs-modal-footer-border-color: var(--bs-border-color);
+--bs-modal-footer-border-width: var(--bs-border-width);
+position: fixed;
+top: 0;
+left: 0;
+z-index: var(--bs-modal-zindex);
+display: none;
+width: 100%;
+height: 100%;
+overflow-x: hidden;
+overflow-y: auto;
+outline: 0;
+}
+.modal.fade .modal-dialog {
+transition:
+transition: transform 0.3s ease-out;
+transition: transform 0.3s ease-out,
+transform: translate(0, -50px);
+}
+@media (prefers-reduced-motion: reduce) {
+.modal.fade .modal-dialog {
+transition: none;
+}
+}
+.modal-content {
+position: relative;
+display:
+display:
+display: flex;
+flex-direction: column;
+width: 100%;
+color: var(--bs-modal-color);
+pointer-events: auto;
+background-color: var(--bs-modal-bg);
+background-clip: padding-box;
+border: var(--bs-modal-border-width) solid var(--bs-modal-border-color);
+border-radius: var(--bs-modal-border-radius);
+outline: 0;
+}
+.modal-header {
+display:
+display:
+display: flex;
+flex-shrink: 0;
+align-items: center;
+padding: var(--bs-modal-header-padding);
+border-bottom: var(--bs-modal-header-border-width) solid var(--bs-modal-header-border-color);
+border-top-left-radius: var(--bs-modal-inner-border-radius);
+border-top-right-radius: var(--bs-modal-inner-border-radius);
+}
+.modal-body {
+position: relative;
+flex: 1 1 auto;
+padding: var(--bs-modal-padding);
+}
+.modal-footer {
+display:
+display:
+display: flex;
+flex-shrink: 0;
+flex-wrap: wrap;
+align-items: center;
+justify-content: flex-end;
+padding: calc(var(--bs-modal-padding) - var(--bs-modal-footer-gap) * 0.5);
+background-color: var(--bs-modal-footer-bg);
+border-top: var(--bs-modal-footer-border-width) solid var(--bs-modal-footer-border-color);
+border-bottom-right-radius: var(--bs-modal-inner-border-radius);
+border-bottom-left-radius: var(--bs-modal-inner-border-radius);
+}
+@media (min-width: 576px) {
+.modal {
+--bs-modal-margin: 1.75rem;
+--bs-modal-box-shadow: var(--bs-box-shadow);
+}
+}
+.tooltip {
+--bs-tooltip-zindex: 1080;
+--bs-tooltip-max-width: 200px;
+--bs-tooltip-padding-x: 0.75rem;
+--bs-tooltip-padding-y: 0.375rem;
+--bs-tooltip-margin: ;
+--bs-tooltip-font-size: 0.7875rem;
+--bs-tooltip-color: var(--bs-body-bg);
+--bs-tooltip-bg: var(--bs-body-color);
+--bs-tooltip-border-radius: var(--bs-border-radius);
+--bs-tooltip-opacity: 1;
+--bs-tooltip-arrow-width: 0.8rem;
+--bs-tooltip-arrow-height: 0.4rem;
+z-index: var(--bs-tooltip-zindex);
+display: block;
+margin: var(--bs-tooltip-margin);
+font-family: var(--bs-font-sans-serif);
+font-style: normal;
+font-weight: 400;
+line-height: 1.5;
+text-align: left;
+text-align: start;
+text-decoration: none;
+text-shadow: none;
+text-transform: none;
+letter-spacing: normal;
+word-break: normal;
+white-space: normal;
+word-spacing: normal;
+line-break: auto;
+font-size: var(--bs-tooltip-font-size);
+word-wrap: break-word;
+opacity: 0;
+}
+.popover {
+--bs-popover-zindex: 1070;
+--bs-popover-max-width: 276px;
+--bs-popover-font-size: 0.7875rem;
+--bs-popover-bg: var(--bs-secondary-bg);
+--bs-popover-border-width: var(--bs-border-width);
+--bs-popover-border-color: var(--bs-border-color);
+--bs-popover-border-radius: var(--bs-border-radius-lg);
+--bs-popover-inner-border-radius: calc(var(--bs-border-radius-lg) - var(--bs-border-width));
+--bs-popover-box-shadow: 0px 3px 4px 0px rgba(0, 0, 0, 0.03);
+--bs-popover-header-padding-x: 0.8rem;
+--bs-popover-header-padding-y: 0.7rem;
+--bs-popover-header-font-size: 0.875rem;
+--bs-popover-header-color: var(--bs-headings-color);
+--bs-popover-header-bg: var(--bs-tertiary-bg);
+--bs-popover-body-padding-x: 0.8rem;
+--bs-popover-body-padding-y: 0.7rem;
+--bs-popover-body-color: var(--bs-body-color);
+--bs-popover-arrow-width: 1rem;
+--bs-popover-arrow-height: 0.5rem;
+--bs-popover-arrow-border: var(--bs-popover-border-color);
+z-index: var(--bs-popover-zindex);
+display: block;
+max-width: var(--bs-popover-max-width);
+font-family: var(--bs-font-sans-serif);
+font-style: normal;
+font-weight: 400;
+line-height: 1.5;
+text-align: left;
+text-align: start;
+text-decoration: none;
+text-shadow: none;
+text-transform: none;
+letter-spacing: normal;
+word-break: normal;
+white-space: normal;
+word-spacing: normal;
+line-break: auto;
+font-size: var(--bs-popover-font-size);
+word-wrap: break-word;
+background-color: var(--bs-popover-bg);
+background-clip: padding-box;
+border: var(--bs-popover-border-width) solid var(--bs-popover-border-color);
+border-radius: var(--bs-popover-border-radius);
+}
+[data-bs-theme=dark] .carousel .carousel-control-prev-icon,
+[data-bs-theme=dark] .carousel .carousel-control-next-icon, [data-bs-theme=dark].carousel .carousel-control-prev-icon,
+[data-bs-theme=dark].carousel .carousel-control-next-icon {
+filter: invert(1) grayscale(100);
+}
+[data-bs-theme=dark] .carousel .carousel-indicators [data-bs-target], [data-bs-theme=dark].carousel .carousel-indicators [data-bs-target] {
+background-color: #000000;
+}
+[data-bs-theme=dark] .carousel .carousel-caption, [data-bs-theme=dark].carousel .carousel-caption {
+color: #000000;
+}
+.offcanvas, .offcanvas-xxl, .offcanvas-xl, .offcanvas-lg, .offcanvas-md, .offcanvas-sm {
+--bs-offcanvas-zindex: 1045;
+--bs-offcanvas-width: 280px;
+--bs-offcanvas-height: 30vh;
+--bs-offcanvas-padding-x: 1.5rem;
+--bs-offcanvas-padding-y: 1.5rem;
+--bs-offcanvas-color: var(--bs-body-color);
+--bs-offcanvas-bg: var(--bs-secondary-bg);
+--bs-offcanvas-border-width: var(--bs-border-width);
+--bs-offcanvas-border-color: transparent;
+--bs-offcanvas-box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+--bs-offcanvas-transition: transform 0.3s ease-in-out;
+--bs-offcanvas-title-line-height: 1.5;
+}
+.offcanvas {
+position: fixed;
+bottom: 0;
+z-index: var(--bs-offcanvas-zindex);
+display:
+display:
+display: flex;
+flex-direction: column;
+max-width: 100%;
+color: var(--bs-offcanvas-color);
+visibility: hidden;
+background-color: var(--bs-offcanvas-bg);
+background-clip: padding-box;
+outline: 0;
+transition: var(--bs-offcanvas-transition);
+}
+@media (prefers-reduced-motion: reduce) {
+.offcanvas {
+transition: none;
+}
+}
+.offcanvas-header {
+display:
+display:
+display: flex;
+align-items: center;
+padding: var(--bs-offcanvas-padding-y) var(--bs-offcanvas-padding-x);
+}
+.offcanvas-body {
+flex-grow: 1;
+padding: var(--bs-offcanvas-padding-y) var(--bs-offcanvas-padding-x);
+overflow-y: auto;
+}
+.d-flex, .avatar-group {
+display:
+display:
+display: flex !important;
+}
+.flex-wrap, .avatar-group {
+flex-wrap: wrap !important;
+}
+.align-items-center, .avatar-group {
+align-items: center !important;
+}
+.topbar {
+top: 0;
+z-index: 1005;
+position: sticky;
+transition: all 0.3s ease-in-out;
+height: var(--bs-topbar-height);
+background-color: var(--bs-topbar-bg);
+padding-left: var(--bs-main-nav-width);
+}
+.topbar .navbar-header {
+display:
+display:
+display: flex;
+margin: 0 auto;
+align-items: center;
+justify-content: space-between;
+}
+.topbar .app-search .form-control {
+border: none;
+padding-left: 40px;
+padding-right: 15px;
+background-color: var(--bs-topbar-search-bg);
+box-shadow: none;
+height: 42px;
+}
+.topbar .app-search .search-widget-icon {
+position: absolute;
+z-index: 10;
+font-size: 18px;
+left: 11px;
+top: 50%;
+color: #8486a7;
+transform: translateY(-50%);
+cursor: pointer;
+}
+.topbar .app-search .search-widget-icon-close {
+right: 7px;
+left: auto !important;
+}
+.topbar .topbar-item {
+display:
+display:
+display: flex;
+align-items: center;
+justify-content: center;
+height: var(--bs-topbar-height);
+}
+.topbar .topbar-item .button-toggle-menu {
+border: none;
+border-radius: 0;
+color: var(--bs-topbar-item-color);
+background-color: transparent;
+}
+.topbar .topbar-item .button-toggle-menu.active, .topbar .topbar-item .button-toggle-menu:active, .topbar .topbar-item .button-toggle-menu:hover, .topbar .topbar-item .button-toggle-menu:focus {
+color: var(--bs-topbar-item-color);
+background-color: transparent;
+}
+.topbar .topbar-item .topbar-button {
+border: none;
+border-radius: 50%;
+background: transparent;
+transition: all 0.3s ease-in-out;
+color: var(--bs-topbar-item-color);
+padding: 0.5rem 0.5rem;
+position: relative;
+}
+.topbar .topbar-item .topbar-button.show, .topbar .topbar-item .topbar-button.active, .topbar .topbar-item .topbar-button:active, .topbar .topbar-item .topbar-button:hover {
+color: #ff6c2f;
+}
+.topbar .topbar-badge {
+right: -7px;
+top: 7px !important;
+}
+html[data-bs-theme=dark] .topbar #light-dark-mode i::before {
+transition: all 0.3s ease-in-out;
+content: "\eebe";
+}
+html[data-menu-size=hidden] .topbar {
+padding: 0;
+}
+@media (max-width: 375px) {
+.topbar {
+padding: 0 0.75rem !important;
+}
+}
+@media (max-width: 600px) {
+.topbar .dropdown {
+position: static;
+}
+.topbar .dropdown .dropdown-menu {
+width: 100%;
+}
+}
+.logo-box {
+position: sticky;
+overflow: hidden;
+text-align: center;
+white-space: nowrap;
+transition: all 0.3s ease-in-out;
+line-height: var(--bs-topbar-height);
+padding: 0 var(--bs-main-nav-item-padding-x);
+}
+.logo-box .logo-sm {
+display: none;
+height: var(--bs-logo-sm-height);
+}
+.logo-box .logo-lg {
+height: var(--bs-logo-lg-height);
+}
+.logo-box .logo-light {
+display: none;
+}
+.logo-box .logo-dark {
+display: block;
+}
+.wrapper .main-nav {
+top: 0;
+bottom: 0;
+z-index: 1010;
+margin-left: 0;
+position: fixed;
+transition: all 0.3s ease-in-out;
+width: var(--bs-main-nav-width);
+background: var(--bs-main-nav-bg);
+min-width: var(--bs-main-nav-width);
+padding-bottom: 1.5rem;
+border-right: 0 solid var(--bs-main-nav-border-color);
+box-shadow: inset -8px 0px 8px -8px rgba(134, 110, 110, 0.25);
+}
+.wrapper .main-nav .scrollbar {
+height: calc(100% - var(--bs-topbar-height));
+}
+.wrapper .main-nav .menu-arrow::after {
+right: calc(var(--bs-main-nav-item-padding-x) * 1);
+display: block;
+content: "\ea4a";
+font-family: boxicons;
+margin-left: auto;
+position: absolute;
+transition:
+transition: transform 0.2s;
+transition: transform 0.2s,
+color: var(--bs-main-nav-item-color);
+font-size: calc(var(--bs-main-nav-item-font-size) * 1.25);
+opacity: 0.6;
+}
+.wrapper .main-nav .menu-arrow[aria-expanded=true]::after {
+transform: rotate(-180deg);
+color: var(--bs-main-nav-item-hover-color);
+}
+.wrapper .main-nav .menu-arrow[aria-expanded=true]::before {
+opacity: 1;
+color: var(--bs-main-nav-item-hover-color);
+}
+.wrapper .main-nav .menu-title {
+cursor: default;
+font-size: 11px;
+letter-spacing: 0.05em;
+text-transform: uppercase;
+color: var(--bs-main-nav-item-color);
+opacity: 0.6;
+font-weight: 600;
+padding: var(--bs-main-nav-item-padding-y) calc(var(--bs-main-nav-item-padding-x) * 1.25);
+transition: all 0.3s ease-in-out;
+height: 36px;
+}
+.wrapper .main-nav .navbar-nav .nav-item {
+padding: calc(var(--bs-main-nav-item-padding-y) * 0.1) 0;
+}
+.wrapper .main-nav .navbar-nav .nav-item .nav-link {
+display:
+display:
+display: flex;
+gap: 12px;
+line-height: 1;
+font-weight: 400;
+align-items: center;
+white-space: nowrap;
+transition: all 0.3s ease-in-out;
+color: var(--bs-main-nav-item-color);
+font-size: var(--bs-main-nav-item-font-size);
+padding: var(--bs-main-nav-item-padding-y) var(--bs-main-nav-item-padding-x);
+border-left: 3px solid transparent;
+}
+.wrapper .main-nav .navbar-nav .nav-item .nav-link.active {
+font-weight: 500;
+border-left-color: var(--bs-primary);
+}
+.wrapper .main-nav .navbar-nav .nav-item .nav-link.active .nav-icon {
+color: var(--bs-primary);
+}
+.wrapper .main-nav .navbar-nav .nav-item .nav-link.show, .wrapper .main-nav .navbar-nav .nav-item .nav-link.active, .wrapper .main-nav .navbar-nav .nav-item .nav-link:active, .wrapper .main-nav .navbar-nav .nav-item .nav-link:hover, .wrapper .main-nav .navbar-nav .nav-item .nav-link:focus {
+color: var(--bs-main-nav-item-hover-color);
+background-color: var(--bs-main-nav-item-hover-bg);
+}
+.wrapper .main-nav .navbar-nav .nav-item .nav-link.show::after, .wrapper .main-nav .navbar-nav .nav-item .nav-link.active::after, .wrapper .main-nav .navbar-nav .nav-item .nav-link:active::after, .wrapper .main-nav .navbar-nav .nav-item .nav-link:hover::after, .wrapper .main-nav .navbar-nav .nav-item .nav-link:focus::after {
+color: var(--bs-main-nav-item-hover-color);
+}
+.wrapper .main-nav .navbar-nav .nav-item .nav-link .nav-icon {
+display:
+display:
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: var(--bs-main-nav-item-icon-size);
+}
+.wrapper .main-nav .navbar-nav .nav-item .nav-link .badge {
+margin-left: auto;
+}
+.wrapper .main-nav .navbar-nav .sub-navbar-nav {
+flex-direction: column;
+padding-left: 12px;
+}
+.wrapper .main-nav .navbar-nav .sub-navbar-nav .menu-arrow::after {
+right: 0;
+}
+.wrapper .main-nav .navbar-nav .sub-navbar-nav .sub-nav-item {
+cursor: pointer;
+padding: calc(var(--bs-main-nav-item-padding-y) * 0.5) var(--bs-main-nav-item-padding-x);
+}
+.wrapper .main-nav .navbar-nav .sub-navbar-nav .sub-nav-item .sub-nav-link {
+display:
+display:
+display: flex;
+position: relative;
+white-space: nowrap;
+transition: all 0.3s ease-in-out;
+color: var(--bs-main-nav-item-color);
+font-size: calc(var(--bs-main-nav-item-font-size) * 0.95);
+padding: calc(var(--bs-main-nav-item-padding-y) * 0.25) var(--bs-main-nav-item-padding-x);
+}
+.wrapper .main-nav .navbar-nav .sub-navbar-nav .sub-nav-item .sub-nav-link.active {
+font-weight: 500;
+}
+.wrapper .main-nav .navbar-nav .sub-navbar-nav .sub-nav-item .sub-nav-link.active, .wrapper .main-nav .navbar-nav .sub-navbar-nav .sub-nav-item .sub-nav-link:active, .wrapper .main-nav .navbar-nav .sub-navbar-nav .sub-nav-item .sub-nav-link:hover, .wrapper .main-nav .navbar-nav .sub-navbar-nav .sub-nav-item .sub-nav-link:focus {
+color: var(--bs-main-nav-item-hover-color);
+}
+.wrapper .main-nav .navbar-nav .sub-navbar-nav .sub-nav-item .sub-nav-link.active::before, .wrapper .main-nav .navbar-nav .sub-navbar-nav .sub-nav-item .sub-nav-link:active::before, .wrapper .main-nav .navbar-nav .sub-navbar-nav .sub-nav-item .sub-nav-link:hover::before, .wrapper .main-nav .navbar-nav .sub-navbar-nav .sub-nav-item .sub-nav-link:focus::before {
+background-color: var(--bs-main-nav-item-hover-color);
+opacity: 1;
+}
+.wrapper .main-nav .navbar-nav .sub-navbar-nav .sub-nav-item .sub-nav-link:hover {
+transform: translateX(5px);
+}
+.wrapper .main-nav .navbar-nav .sub-navbar-nav .sub-navbar-nav {
+padding-left: calc(var(--bs-main-nav-width-sm) - var(--bs-main-nav-item-padding-x) * 5.25);
+}
+.wrapper .page-content {
+position: relative;
+transition: all 0.3s ease-in-out;
+min-height: calc(100vh - var(--bs-topbar-height));
+padding-bottom: var(--bs-footer-height);
+margin-left: var(--bs-main-nav-width);
+}
+html[data-topbar-color=dark]:not([data-bs-theme=dark]) .page-content {
+padding-top: 1.5rem;
+}
+html[data-menu-size=condensed] .main-nav {
+position: absolute;
+width: var(--bs-main-nav-width-sm);
+min-width: var(--bs-main-nav-width-sm);
+}
+html[data-menu-size=condensed] .main-nav .logo-box {
+top: 0;
+z-index: 1020 !important;
+backdrop-filter: blur(10px);
+}
+html[data-menu-size=condensed] .main-nav .logo-box .logo-sm {
+display: inline-block;
+}
+html[data-menu-size=condensed] .main-nav .logo-box .logo-lg {
+display: none;
+}
+html[data-menu-size=condensed] .main-nav .menu-title {
+height: 0;
+opacity: 0;
+padding: 0;
+}
+html[data-menu-size=condensed] .main-nav .badge {
+display: none;
+}
+html[data-menu-size=condensed] .main-nav .scrollbar {
+height: auto !important;
+}
+html[data-menu-size=condensed] .main-nav .simplebar-mask,
+html[data-menu-size=condensed] .main-nav .simplebar-content-wrapper {
+overflow: visible !important;
+}
+html[data-menu-size=condensed] .main-nav .simplebar-scrollbar {
+display: none !important;
+}
+html[data-menu-size=condensed] .main-nav .simplebar-offset {
+bottom: 0 !important;
+}
+html[data-menu-size=condensed] .main-nav .navbar-nav {
+padding: 10px 0;
+}
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-link {
+justify-content: center;
+}
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-link .nav-text, html[data-menu-size=condensed] .main-nav .navbar-nav .nav-link.menu-arrow::after {
+display: none;
+}
+html[data-menu-size=condensed] .main-nav .navbar-nav .collapse,
+html[data-menu-size=condensed] .main-nav .navbar-nav .collapsing {
+display: none;
+height: auto !important;
+}
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item {
+position: relative;
+white-space: nowrap;
+}
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapse,
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapsing,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapse,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapsing {
+display: block;
+left: 100%;
+margin-top: -1px;
+position: absolute;
+height: inherit !important;
+transition: none !important;
+}
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapse > .sub-navbar-nav,
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapsing > .sub-navbar-nav,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapse > .sub-navbar-nav,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapsing > .sub-navbar-nav {
+padding-left: 0;
+background: var(--bs-secondary-bg);
+box-shadow: var(--bs-box-shadow-lg);
+width: calc(var(--bs-main-nav-width) - var(--bs-main-nav-width-sm));
+border: 0 solid var(--bs-border-color);
+}
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapse > .sub-navbar-nav > .sub-nav-item,
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapsing > .sub-navbar-nav > .sub-nav-item,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapse > .sub-navbar-nav > .sub-nav-item,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapsing > .sub-navbar-nav > .sub-nav-item {
+padding: 0;
+}
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapse > .sub-navbar-nav > .sub-nav-item > .sub-nav-link,
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapsing > .sub-navbar-nav > .sub-nav-item > .sub-nav-link,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapse > .sub-navbar-nav > .sub-nav-item > .sub-nav-link,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapsing > .sub-navbar-nav > .sub-nav-item > .sub-nav-link {
+padding: calc(var(--bs-main-nav-item-padding-y) * 0.75) var(--bs-main-nav-item-padding-x);
+z-index: 5;
+}
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapse > .sub-navbar-nav > .sub-nav-item > .sub-nav-link > .nav-text,
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapsing > .sub-navbar-nav > .sub-nav-item > .sub-nav-link > .nav-text,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapse > .sub-navbar-nav > .sub-nav-item > .sub-nav-link > .nav-text,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapsing > .sub-navbar-nav > .sub-nav-item > .sub-nav-link > .nav-text {
+display: block;
+}
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapse > .sub-navbar-nav > .sub-nav-item > .collapse,
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapse > .sub-navbar-nav > .sub-nav-item > .collapsing,
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapsing > .sub-navbar-nav > .sub-nav-item > .collapse,
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapsing > .sub-navbar-nav > .sub-nav-item > .collapsing,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapse > .sub-navbar-nav > .sub-nav-item > .collapse,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapse > .sub-navbar-nav > .sub-nav-item > .collapsing,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapsing > .sub-navbar-nav > .sub-nav-item > .collapse,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapsing > .sub-navbar-nav > .sub-nav-item > .collapsing {
+top: 0;
+}
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapse > .sub-navbar-nav .sub-nav-item .sub-nav-link,
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapsing > .sub-navbar-nav .sub-nav-item .sub-nav-link,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapse > .sub-navbar-nav .sub-nav-item .sub-nav-link,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapsing > .sub-navbar-nav .sub-nav-item .sub-nav-link {
+color: var(--bs-body-color);
+}
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapse > .sub-navbar-nav .sub-nav-item .sub-nav-link[aria-expanded=true], html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapse > .sub-navbar-nav .sub-nav-item .sub-nav-link.show, html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapse > .sub-navbar-nav .sub-nav-item .sub-nav-link:focus, html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapse > .sub-navbar-nav .sub-nav-item .sub-nav-link:hover,
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapsing > .sub-navbar-nav .sub-nav-item .sub-nav-link[aria-expanded=true],
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapsing > .sub-navbar-nav .sub-nav-item .sub-nav-link.show,
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapsing > .sub-navbar-nav .sub-nav-item .sub-nav-link:focus,
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapsing > .sub-navbar-nav .sub-nav-item .sub-nav-link:hover,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapse > .sub-navbar-nav .sub-nav-item .sub-nav-link[aria-expanded=true],
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapse > .sub-navbar-nav .sub-nav-item .sub-nav-link.show,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapse > .sub-navbar-nav .sub-nav-item .sub-nav-link:focus,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapse > .sub-navbar-nav .sub-nav-item .sub-nav-link:hover,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapsing > .sub-navbar-nav .sub-nav-item .sub-nav-link[aria-expanded=true],
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapsing > .sub-navbar-nav .sub-nav-item .sub-nav-link.show,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapsing > .sub-navbar-nav .sub-nav-item .sub-nav-link:focus,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapsing > .sub-navbar-nav .sub-nav-item .sub-nav-link:hover {
+color: var(--bs-primary);
+}
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapse > .sub-navbar-nav .sub-nav-item .collapse,
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapse > .sub-navbar-nav .sub-nav-item .collapsing,
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapsing > .sub-navbar-nav .sub-nav-item .collapse,
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item:hover > .collapsing > .sub-navbar-nav .sub-nav-item .collapsing,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapse > .sub-navbar-nav .sub-nav-item .collapse,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapse > .sub-navbar-nav .sub-nav-item .collapsing,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapsing > .sub-navbar-nav .sub-nav-item .collapse,
+html[data-menu-size=condensed] .main-nav .navbar-nav .nav-item:hover > .collapsing > .sub-navbar-nav .sub-nav-item .collapsing {
+top: 0;
+}
+html[data-menu-size=condensed] .main-nav .navbar-nav > .nav-item:hover > .nav-link::before {
+content: "";
+inset: 0px;
+position: absolute;
+width: var(--bs-main-nav-width);
+}
+html[data-menu-size=condensed] .main-nav .navbar-nav > .nav-item:hover > .nav-link > .nav-text {
+display:
+display:
+display: flex;
+align-items: center;
+position: absolute;
+left: var(--bs-main-nav-width-sm);
+background: var(--bs-secondary-bg);
+color: var(--bs-body-color);
+line-height: var(--bs-main-nav-item-icon-size);
+width: calc(var(--bs-main-nav-width) - var(--bs-main-nav-width-sm));
+padding: var(--bs-main-nav-item-padding-y) var(--bs-main-nav-item-padding-x);
+border: 0 solid var(--bs-border-color);
+box-shadow: var(--bs-box-shadow-lg);
+}
+html[data-menu-size=condensed] .main-nav .navbar-nav > .nav-item .nav-text,
+html[data-menu-size=condensed] .main-nav .navbar-nav > .nav-item .sub-navbar-nav {
+margin-left: 10px;
+}
+html[data-menu-size=condensed] .main-nav .navbar-nav .sub-nav-item .menu-arrow::after {
+right: 10px;
+transform: rotate(-90deg);
+}
+html[data-menu-size=condensed] .topbar {
+padding-left: var(--bs-main-nav-width-sm);
+}
+html[data-menu-size=condensed] .page-content {
+margin-left: var(--bs-main-nav-width-sm);
+min-height: 1300px;
+}
+html[data-menu-size=sm-hover] .topbar {
+padding-left: var(--bs-main-nav-width-sm);
+}
+html[data-menu-size=sm-hover] .page-content {
+margin-left: var(--bs-main-nav-width-sm);
+position: relative;
+}
+html[data-menu-size=sm-hover] .button-toggle-menu {
+display: none;
+}
+html[data-menu-size=sm-hover] .main-nav:not(:hover) {
+width: var(--bs-main-nav-width-sm);
+min-width: var(--bs-main-nav-width-sm);
+}
+html[data-menu-size=sm-hover] .main-nav:not(:hover) .logo-box {
+text-align: center;
+padding: 0;
+}
+html[data-menu-size=sm-hover] .main-nav:not(:hover) .logo-box .logo-sm {
+display: inline-block;
+}
+html[data-menu-size=sm-hover] .main-nav:not(:hover) .logo-box .logo-lg {
+display: none;
+}
+html[data-menu-size=sm-hover] .main-nav:not(:hover) .nav-item .nav-link {
+justify-content: center;
+}
+html[data-menu-size=sm-hover] .main-nav:not(:hover) .nav-item .nav-link .nav-text,
+html[data-menu-size=sm-hover] .main-nav:not(:hover) .nav-item .nav-link .badge {
+display: none;
+}
+html[data-menu-size=sm-hover] .main-nav:not(:hover) .nav-item .nav-link.menu-arrow::after {
+display: none;
+}
+html[data-menu-size=sm-hover] .main-nav:not(:hover) .nav-item .collapse,
+html[data-menu-size=sm-hover] .main-nav:not(:hover) .nav-item .collapsing {
+display: none;
+}
+html[data-menu-size=sm-hover] .main-nav:not(:hover) .menu-title {
+transition: all 0.3s ease-in-out;
+height: 0;
+opacity: 0;
+padding: 0;
+}
+html[data-menu-size=sm-hover] .main-nav:not(:hover) .simplebar-track.simplebar-vertical {
+visibility: hidden !important;
+}
+html[data-menu-size=sm-hover] .main-nav {
+width: var(--bs-main-nav-width);
+min-width: var(--bs-main-nav-width);
+}
+html[data-menu-size=sm-hover] .main-nav .logo-box {
+text-align: left;
+}
+html[data-menu-size=sm-hover] .main-nav:hover .button-sm-hover {
+display: block;
+}
+html[data-menu-size=sm-hover] .main-nav:hover .button-sm-hover .button-sm-hover-icon {
+transform: rotateY(180deg);
+transition: all 0.3s ease-in-out;
+}
+html[data-menu-size=sm-hover] .main-nav .simplebar-track.simplebar-horizontal {
+visibility: hidden !important;
+}
+html[data-menu-size=sm-hover-active] .button-toggle-menu {
+display: none;
+}
+html[data-menu-size=sm-hover-active] .main-nav .logo-box {
+text-align: left;
+}
+html[data-menu-size=sm-hover-active] .main-nav .button-sm-hover {
+display: block;
+}
+html[data-menu-size=sm-hover-active] .main-nav .button-sm-hover .button-sm-hover-icon {
+transform-style: preserve-3d;
+transition: all 0.3s ease-in-out;
+}
+html[data-menu-size=hidden] .main-nav {
+margin-left: calc(var(--bs-main-nav-width) * -1);
+}
+html[data-menu-size=hidden] .page-content {
+margin-left: 0;
+}
+html[data-menu-size=hidden].sidebar-enable .main-nav {
+margin-left: 0;
+z-index: 1055;
+}
+html[data-bs-theme=dark] .main-nav .logo-box .logo-light,
+html[data-menu-color=dark] .main-nav .logo-box .logo-light,
+html[data-menu-color=brand] .main-nav .logo-box .logo-light {
+display: block;
+}
+html[data-bs-theme=dark] .main-nav .logo-box .logo-dark,
+html[data-menu-color=dark] .main-nav .logo-box .logo-dark,
+html[data-menu-color=brand] .main-nav .logo-box .logo-dark {
+display: none;
+}
+.footer {
+bottom: 0;
+right: 0;
+left: 0;
+position: absolute;
+display:
+display:
+display: flex;
+align-items: center;
+padding: 0 calc(1.5rem * 0.5);
+color: var(--bs-link-color);
+height: var(--bs-footer-height);
+box-shadow: 0px 3px 4px 0px rgba(0, 0, 0, 0.03);
+}
+.footer-text {
+background:
+background: linear-gradient(to right, #ff6c2f 10%, #f9b931 50%, #22c55e 60%);
+background-size: auto auto;
+background-clip: border-box;
+background-size: 200% auto;
+background-clip: text;
+text-fill-color: transparent;
+animation: textclip 2.5s linear infinite;
+display: inline-block;
+}
+.avatar-xs {
+height: 1.5rem;
+width: 1.5rem;
+}
+.avatar-sm {
+height: 2.25rem;
+width: 2.25rem;
+}
+.avatar-md {
+height: 3.5rem;
+width: 3.5rem;
+}
+.avatar-lg {
+height: 4.5rem;
+width: 4.5rem;
+}
+.avatar-xl {
+height: 6rem;
+width: 6rem;
+}
+.avatar-xxl {
+height: 7.5rem;
+width: 7.5rem;
+}
+.avatar-title {
+align-items: center;
+color: #ffffff;
+display:
+display:
+display: flex;
+height: 100%;
+width: 100%;
+justify-content: center;
+}
+.avatar-group {
+padding-left: 0.75rem;
+line-height: 1;
+}
+.avatar-group .avatar {
+margin-left: -1.15rem;
+transition: all 0.2s;
+line-height: 1;
+}
+.avatar-group .avatar:hover {
+position: relative;
+transform: translateY(-3px);
+z-index: 1;
+}
+.avatar-group.avatar-group-sm .avatar {
+margin-left: -0.5rem;
+}
+.btn-soft-primary {
+--bs-btn-color: #ff6c2f;
+--bs-btn-bg: rgba(255, 108, 47, 0.1);
+--bs-btn-border-color: transparent;
+--bs-btn-hover-color: #ffffff;
+--bs-btn-hover-bg: #ff6c2f;
+--bs-btn-hover-border-color: #ff6c2f;
+--bs-btn-active-color: #ffffff;
+--bs-btn-active-bg: #ff6c2f;
+--bs-btn-active-border-color: #ff6c2f;
+--bs-btn-disabled-color: #ffffff;
+--bs-btn-disabled-bg: #ff6c2f;
+--bs-btn-disabled-border-color: #ff6c2f;
+--bs-btn-focus-shadow-rgb: 0 0 0 $btn-focus-width rgba($bg, 0.5);
+}
+.btn-soft-danger {
+--bs-btn-color: #ef5f5f;
+--bs-btn-bg: rgba(239, 95, 95, 0.1);
+--bs-btn-border-color: transparent;
+--bs-btn-hover-color: #ffffff;
+--bs-btn-hover-bg: #ef5f5f;
+--bs-btn-hover-border-color: #ef5f5f;
+--bs-btn-active-color: #ffffff;
+--bs-btn-active-bg: #ef5f5f;
+--bs-btn-active-border-color: #ef5f5f;
+--bs-btn-disabled-color: #ffffff;
+--bs-btn-disabled-bg: #ef5f5f;
+--bs-btn-disabled-border-color: #ef5f5f;
+--bs-btn-focus-shadow-rgb: 0 0 0 $btn-focus-width rgba($bg, 0.5);
+}
+.card {
+box-shadow: var(--bs-box-shadow);
+margin-bottom: 1.5rem;
+}
+.card-header {
+border-bottom: 1px solid var(--bs-card-border-color);
+}
+.card-title,
+.card-header {
+margin-top: 0;
+}
+.card-title {
+font-size: 1rem;
+font-weight: 600;
+margin: 0;
+}
+.dropdown-menu {
+box-shadow: 0 5px 10px rgba(30, 32, 37, 0.12);
+animation-name: DropDownSlide;
+animation-duration: 0.3s;
+animation-fill-mode: both;
+font-size: 0.875rem;
+top: 100%;
+}
+.form-check-input {
+margin-top: 0.125rem;
+}
+.popover {
+box-shadow: 0 5px 10px rgba(30, 32, 37, 0.12);
+}
+@media print {
+.topbar,
+.main-nav,
+.footer,
+.page-title-box {
+display: none;
+}
+}
+.container-fluid, .container-sm, .container-md, .container-lg, .container-xl, .container-xxl {
+max-width: 95%;
+}
+.table-centered td,
+.table-centered th {
+vertical-align: middle !important;
+}
+.table-nowrap th,
+.table-nowrap td {
+white-space: nowrap;
+}
+.choices[data-type*=select-one] .choices__input {
+padding: 0.5rem 1rem !important;
+background-color: var(--bs-secondary-bg);
+border: 1px solid var(--bs-input-border-color);
+font-size: 0.875rem;
+border-radius: var(--bs-border-radius-sm);
+color: var(--bs-body-color);
+margin-bottom: 10px;
+}
+.choices[data-type*=select-one] .choices__input:focus {
+border-color: var(--bs-input-focus-border-color);
+}
+.choices[data-type*=select-one] .choices__button {
+right: 20px;
+}
+.choices[data-type*=select-multiple] .choices__inner, .choices[data-type*=text] .choices__inner {
+cursor: text;
+padding: 0.25rem 0.5rem !important;
+}
+.choices[data-type*=select-multiple] .choices__button, .choices[data-type*=text] .choices__button {
+border-left: 1px solid rgba(255, 255, 255, 0.5);
+border-right: 0;
+}
+.choices[data-type*=select-multiple] .choices__list--dropdown, .choices[data-type*=text] .choices__list--dropdown {
+padding-bottom: 10px;
+}
+.choices[data-type*=select-multiple] .choices__list--dropdown .choices__list, .choices[data-type*=text] .choices__list--dropdown .choices__list {
+margin-bottom: 0;
+}
+.choices[data-type*=select-multiple] .choices__input {
+padding-top: 3px;
+}
+.input-light .choices__inner {
+background-color: var(--bs-light);
+border: none;
+}
+.choices__inner {
+padding: 0.5rem 1rem !important;
+vertical-align: middle;
+background-color: var(--bs-secondary-bg);
+border: var(--bs-border-width) solid var(--bs-input-border-color);
+border-radius: var(--bs-border-radius-sm) !important;
+font-size: 0.875rem;
+min-height: auto;
+}
+.choices__inner .choices__list--single {
+padding: 0 !important;
+}
+.is-focused .choices__inner,
+.is-open .choices__inner {
+border-color: var(--bs-input-focus-border-color);
+}
+.choices__list--multiple .choices__item {
+vertical-align: initial;
+border-radius: 7px;
+padding: 2px 7px;
+font-size: 11px;
+font-weight: 400;
+margin: 2px 5px 2px 0;
+background-color: #ff6c2f;
+border: 1px solid #ff6c2f;
+color: #ffffff;
+box-shadow: 0 5px 10px rgba(30, 32, 37, 0.12);
+}
+.choices__list--multiple .choices__item.is-highlighted {
+background-color: #ff6c2f;
+border: 1px solid #ff6c2f;
+}
+.is-disabled .choices__list--multiple .choices__item {
+background-color: #5d7186;
+border: 1px solid #5d7186;
+}
+.choices.is-disabled .choices__inner,
+.choices.is-disabled .choices__input {
+background-color: var(--bs-light);
+}
+.choices__list--dropdown {
+padding: 10px 10px 20px 10px;
+background-color: var(--bs-secondary-bg) !important;
+border: 1px solid var(--bs-border-color) !important;
+box-shadow: 0 5px 10px rgba(30, 32, 37, 0.12);
+margin-top: 0 !important;
+border-radius: 0.5rem;
+animation-duration: 0.3s;
+animation-fill-mode: both;
+transform: translateY(1px);
+}
+.choices__list--dropdown.is-active {
+animation-name: DropDownSlide;
+}
+.choices__list--dropdown .choices__item--selectable.is-highlighted {
+background-color: var(--bs-tertiary-bg) !important;
+}
+.choices__list--dropdown .choices__list {
+margin: 0 -10px -16px;
+}
+.choices__list--dropdown .choices__list::-webkit-scrollbar {
+
+}
+.choices__list--dropdown .choices__list::-webkit-scrollbar:vertical {
+width: 12px;
+margin-right: 15px;
+}
+.choices__list--dropdown .choices__list::-webkit-scrollbar:horizontal {
+height: 12px;
+}
+.choices__list--dropdown .choices__list::-webkit-scrollbar-thumb {
+background-color: rgba(var(--bs-dark-rgb), 0.1);
+border-radius: 10px;
+border: 2px solid var(--bs-secondary-bg);
+}
+.choices__list--dropdown .choices__list::-webkit-scrollbar-track {
+border-radius: 10px;
+background-color: var(--bs-secondary-bg);
+}
+.choices__list--dropdown .has-no-results {
+font-style: italic;
+font-weight: 500;
+}
+.choices__list--dropdown .choices__item--selectable:after {
+display: none;
+}
+.is-open .choices__list--dropdown {
+border-color: transparent;
+}
+.is-flipped .choices__list--dropdown.is-active {
+border-radius: 0.5rem;
+animation-name: DropDownSlideDown;
+transform: translateY(-1px);
+}
+.choices__list--dropdown .choices__list {
+max-height: 300px;
+}
+.choices__list--dropdown .choices__item {
+font-size: 0.875rem;
+padding: 0.375rem 1.5rem 0.375rem 16px;
+}
+.choices__heading {
+font-weight: 600;
+padding: 10px 16px;
+border-bottom: 1px solid #eaedf1;
+color: var(--bs-secondary-color);
+}
+.choices__input {
+background-color: var(--bs-secondary-bg);
+color: var(--bs-body-color);
+font-size: 0.875rem;
+margin-bottom: 0;
+padding: 2px 0 2px 2px;
+}
+.choices__input::-webkit-input-placeholder {
+color: var(--bs-secondary-color);
+}
+.choices__input::-moz-placeholder {
+color: var(--bs-secondary-color);
+}
+.choices__input:-ms-input-placeholder {
+color: var(--bs-secondary-color);
+}
+.choices__input::-ms-input-placeholder {
+color: var(--bs-secondary-color);
+}
+.choices__input::placeholder {
+color: var(--bs-secondary-color);
+}
+.choices__placeholder {
+color: var(--bs-secondary-color);
+opacity: 1;
+}
+[data-bs-theme=dark] .choices[data-type*=select-one] .choices__button {
+filter: invert(1) grayscale(100%) brightness(200%);
+}
+.dropzone {
+border: 2px dashed var(--bs-input-border-color);
+background: var(--bs-secondary-bg);
+border-radius: 6px;
+cursor: pointer;
+min-height: 150px;
+padding: 20px;
+}
+.dropzone .dz-message {
+text-align: center;
+margin: 2rem 0;
+}
+.dropzone.dz-started .dz-message {
+display: none;
+}
+.gridjs-container {
+color: var(--bs-body-color);
+padding: 0;
+display: block;
+}
+.gridjs-wrapper {
+box-shadow: none;
+border: 1px solid var(--bs-border-color);
+border-radius: 0px;
+}
+.gridjs-wrapper::-webkit-scrollbar {
+
+}
+.gridjs-wrapper::-webkit-scrollbar:vertical {
+width: 5px;
+padding: 5px;
+}
+.gridjs-wrapper::-webkit-scrollbar:horizontal {
+height: 5px;
+}
+.gridjs-wrapper::-webkit-scrollbar-thumb {
+background-color: rgba(var(--bs-dark-rgb), 0.075);
+border-radius: 10px;
+padding: 5px;
+border: none;
+}
+.gridjs-wrapper::-webkit-scrollbar-track {
+border-radius: 10px;
+background-color: transparent;
+}
+.gridjs-footer {
+border: none !important;
+padding: 12px 0 0;
+}
+.gridjs-table {
+width: 100%;
+table-layout: auto !important;
+}
+.gridjs-tbody,
+td.gridjs-td {
+background-color: transparent;
+}
+th.gridjs-th {
+border: 1px solid var(--bs-border-color);
+padding: 0.425rem 0.85rem;
+}
+td.gridjs-td {
+border: 1px solid var(--bs-border-color);
+padding: 0.85rem 0.85rem;
+}
+th.gridjs-th {
+border-top: 0;
+color: var(--bs-body-color);
+background-color: rgba(var(--bs-light-rgb), 0.75);
+}
+th.gridjs-th-sort:focus, th.gridjs-th-sort:hover {
+background-color: rgba(var(--bs-light-rgb), 0.85);
+}
+.gridjs-head {
+padding-top: 0;
+}
+.gridjs-footer {
+box-shadow: none;
+border: 1px solid var(--bs-border-color);
+border-top: 0;
+background-color: transparent;
+}
+.gridjs-summary {
+color: var(--bs-secondary-color);
+margin-top: 8px !important;
+}
+.gridjs-pagination .gridjs-pages button {
+background-color: transparent;
+color: var(--bs-link-color);
+border: 1px solid var(--bs-border-color);
+border-right: none;
+outline: none;
+padding: 0.375rem 0.75rem;
+-moz-user-select: none;
+user-select: none;
+}
+.gridjs-pagination .gridjs-pages button:last-child {
+border-right: 1px solid var(--bs-border-color);
+}
+.gridjs-pagination .gridjs-pages button:disabled, .gridjs-pagination .gridjs-pages button:hover:disabled, .gridjs-pagination .gridjs-pages button[disabled] {
+color: var(--bs-body-color);
+background-color: var(--bs-secondary-bg);
+}
+.gridjs-pagination .gridjs-pages button:hover {
+background-color: var(--bs-secondary-bg);
+color: var(--bs-link-hover-color);
+}
+.gridjs-pagination .gridjs-pages button:focus {
+box-shadow: none;
+}
+.gridjs-pagination .gridjs-pages button:last-child:hover, .gridjs-pagination .gridjs-pages button:first-child:hover {
+background-color: transparent;
+}
+.gridjs-pagination .gridjs-pages button.gridjs-currentPage {
+background-color: #ff6c2f;
+color: #ffffff;
+border-color: #ff6c2f;
+font-weight: 500;
+}
+.gridjs-search {
+position: relative;
+float: left;
+}
+.gridjs-search::before {
+content: "\ebf7";
+font-family: "boxicons";
+position: absolute;
+top: 50%;
+transform: translateY(-50%);
+left: 10px;
+font-size: 18px;
+color: var(--bs-secondary-color);
+}
+input.gridjs-input {
+border-color: var(--bs-input-border-color);
+background-color: var(--bs-secondary-bg);
+color: var(--bs-body-color);
+line-height: 1.5;
+padding: 0.5rem 1rem 0.5rem 2.5rem;
+border-radius: var(--bs-border-radius-sm);
+font-size: 0.875rem;
+}
+input.gridjs-input:focus {
+box-shadow: none;
+border-color: var(--bs-input-focus-border-color);
+background-color: var(--bs-secondary-bg);
+}
+input.gridjs-input::-webkit-input-placeholder {
+color: var(--bs-secondary-color);
+}
+input.gridjs-input::-moz-placeholder {
+color: var(--bs-secondary-color);
+}
+input.gridjs-input:-ms-input-placeholder {
+color: var(--bs-secondary-color);
+}
+input.gridjs-input::-ms-input-placeholder {
+color: var(--bs-secondary-color);
+}
+input.gridjs-input::placeholder {
+color: var(--bs-secondary-color);
+}
+th.gridjs-th .gridjs-th-content {
+float: none;
+display: inline-block;
+vertical-align: middle;
+font-weight: 600;
+}
+button.gridjs-sort {
+float: none;
+display: inline-block;
+vertical-align: middle;
+width: 10px;
+height: 20px;
+}
+th.gridjs-th-sort .gridjs-th-content {
+width: calc(100% - 10px);
+}
+button.gridjs-sort-asc, button.gridjs-sort-desc {
+background-size: 7px;
+}
+.gridjs-tr-selected td {
+background-color: rgba(var(--bs-black-rgb), 0.02);
+}
+.gridjs-tr-selected .gridjs-td .gridjs-checkbox[type=checkbox] {
+background-color: #ff6c2f;
+border-color: #ff6c2f;
+background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e");
+}
+.gridjs-td .gridjs-checkbox {
+width: 1.112em;
+height: 1.112em;
+vertical-align: top;
+background-color: var(--bs-secondary-bg);
+background-repeat: no-repeat;
+background-position: center;
+background-size: contain;
+border: var(--bs-border-width) solid var(--bs-border-color-translucent);
+-moz-appearance: none;
+appearance: none;
+}
+.gridjs-td .gridjs-checkbox[type=checkbox] {
+border-radius: 0.25em;
+}
+.gridjs-border-none td.gridjs-td,
+.gridjs-border-none th.gridjs-th {
+border-right-width: 0;
+border-left-width: 0;
+}
+.gridjs-loading-bar {
+background-color: var(--bs-secondary-bg);
+}
+[data-bs-theme=dark] button.gridjs-sort-neutral, [data-bs-theme=dark] button.gridjs-sort-asc, [data-bs-theme=dark] button.gridjs-sort-desc {
+filter: invert(1) grayscale(100%) brightness(200%);
+}
+.flatpickr-calendar {
+background: var(--bs-secondary-bg);
+box-shadow: 0px 3px 4px 0px rgba(0, 0, 0, 0.03);
+border: 1px solid var(--bs-border-color);
+}
+.flatpickr-calendar.arrowTop:before {
+border-bottom-color: var(--bs-secondary-bg);
+}
+.flatpickr-calendar.arrowTop:after {
+border-bottom-color: var(--bs-secondary-bg);
+}
+.flatpickr-calendar.arrowBottom:before, .flatpickr-calendar.arrowBottom:after {
+border-top-color: var(--bs-secondary-bg);
+}
+.flatpickr-current-month {
+font-size: 110%;
+}
+.flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange, .flatpickr-day.selected.inRange, .flatpickr-day.startRange.inRange, .flatpickr-day.endRange.inRange, .flatpickr-day.selected:focus, .flatpickr-day.startRange:focus, .flatpickr-day.endRange:focus, .flatpickr-day.selected:hover, .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover, .flatpickr-day.selected.prevMonthDay, .flatpickr-day.startRange.prevMonthDay, .flatpickr-day.endRange.prevMonthDay, .flatpickr-day.selected.nextMonthDay, .flatpickr-day.startRange.nextMonthDay, .flatpickr-day.endRange.nextMonthDay {
+background: #ff6c2f;
+border-color: #ff6c2f;
+}
+.flatpickr-day.selected.startRange + .endRange:not(:nth-child(7n+1)), .flatpickr-day.startRange.startRange + .endRange:not(:nth-child(7n+1)), .flatpickr-day.endRange.startRange + .endRange:not(:nth-child(7n+1)) {
+box-shadow: -10px 0 0 #ff6c2f;
+}
+.flatpickr-time input:hover,
+.flatpickr-time .flatpickr-am-pm:hover,
+.flatpickr-time input:focus,
+.flatpickr-time .flatpickr-am-pm:focus {
+background: var(--bs-secondary-bg);
+color: var(--bs-body-color);
+}
+.flatpickr-months .flatpickr-month {
+height: 36px;
+}
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month,
+.flatpickr-months .flatpickr-month {
+color: var(--bs-link-color);
+fill: var(--bs-link-color);
+}
+.flatpickr-weekdays {
+background-color: var(--bs-tertiary-bg);
+}
+span.flatpickr-weekday,
+.flatpickr-day,
+.flatpickr-current-month input.cur-year[disabled],
+.flatpickr-current-month input.cur-year[disabled]:hover,
+.flatpickr-time input,
+.flatpickr-time .flatpickr-time-separator,
+.flatpickr-time .flatpickr-am-pm {
+color: var(--bs-body-color);
+fill: var(--bs-body-color);
+}
+.flatpickr-day.disabled, .flatpickr-day.disabled:hover, .flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay, .flatpickr-day.notAllowed, .flatpickr-day.notAllowed.prevMonthDay, .flatpickr-day.notAllowed.nextMonthDay {
+color: var(--bs-emphasis-color);
+}
+.flatpickr-day.inRange, .flatpickr-day.prevMonthDay.inRange, .flatpickr-day.nextMonthDay.inRange, .flatpickr-day.today.inRange, .flatpickr-day.prevMonthDay.today.inRange, .flatpickr-day.nextMonthDay.today.inRange, .flatpickr-day:hover, .flatpickr-day.prevMonthDay:hover, .flatpickr-day.nextMonthDay:hover, .flatpickr-day:focus, .flatpickr-day.prevMonthDay:focus, .flatpickr-day.nextMonthDay:focus {
+background: var(--bs-tertiary-bg);
+border-color: var(--bs-tertiary-bg);
+}
+.flatpickr-calendar.showTimeInput.hasTime .flatpickr-time, .flatpickr-calendar.hasTime .flatpickr-time {
+border-top: 1px solid var(--bs-secondary-bg);
+}
+.numInputWrapper:hover,
+.flatpickr-current-month .flatpickr-monthDropdown-months:hover {
+background-color: transparent;
+color: var(--bs-body-color);
+}
+.flatpickr-day.inRange {
+box-shadow: -5px 0 0 var(--bs-tertiary-bg), 5px 0 0 var(--bs-tertiary-bg);
+}
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.flatpickr-disabled:hover {
+color: var(--bs-emphasis-color);
+}
+```
+
+## 25. Handoff checklist
+
+- [ ] Existing dashboard modules inventoried and mapped; no invented Inventory or other modules.
+- [ ] Fonts, icons, colors and spacing match the Larkon reference.
+- [ ] Every existing page uses shared shell and primitives.
+- [ ] Light/dark, topbar/menu options and all applicable rail modes work.
+- [ ] Responsive checks include 1140px and1141px.
+- [ ] Tables/forms/dialogs/charts preserve real data and functions.
+- [ ] Placeholder demo links and hardcoded records are absent from production.
+- [ ] Mobile rendered QA and screenshot comparison completed.
+- [ ] Existing tests/build pass and functional changes are tested.
+- [ ] Footer credit links to TaiefLab.
+- [ ] Remaining differences are explicitly reported.
